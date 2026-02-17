@@ -31,6 +31,8 @@ jobs:
         run: npx tauri build
         env:
           TAURI_SIGNING_PRIVATE_KEY: ""
+          VITE_SUPABASE_URL: "https://kqksmievwxwbfnhexcdy.supabase.co"
+          VITE_SUPABASE_ANON_KEY: "sb_publishable_DR4sWS6mG1mtjmj17nk76g_ay-aIerf"
 
       - name: Rename DMG for release
         run: |
