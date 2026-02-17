@@ -1,0 +1,49 @@
+[package]
+name = "aevum"
+version = "0.1.1"
+edition = "2021"
+
+[lib]
+name = "aevum_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Database
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Windows automation
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Threading",
+    "Win32_System_ProcessStatus",
+] }
+windows-core = "0.58"
+
+# Utilities
+chrono = { version = "0.4", features = ["serde"] }
+log = "0.4"
+env_logger = "0.11"
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+regex = "1"
+png = "0.17"
+ureq = { version = "2", features = ["json"] }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"

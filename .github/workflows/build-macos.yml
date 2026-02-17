@@ -1,0 +1,56 @@
+name: Build macOS
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            arch: arm64
+          - target: x86_64-apple-darwin
+            arch: x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Generate macOS icons
+        run: npx tauri icon src-tauri/icons/icon.png
+
+      - name: Build Tauri app
+        run: npx tauri build --target ${{ matrix.target }}
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ""
+
+      - name: Rename DMG for release
+        run: |
+          DMG=$(find src-tauri/target/${{ matrix.target }}/release/bundle/dmg -name "*.dmg" | head -1)
+          if [ -n "$DMG" ]; then
+            cp "$DMG" "Aevum_${{ matrix.arch }}.dmg"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: Aevum_${{ matrix.arch }}.dmg
+          if-no-files-found: error

@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+src-tauri/target/
+
+# Generated files
+src-tauri/gen/
+
+# Installer builds
+*.exe
+*.dmg
+*.msi
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+nul
+
+# Environment
+.env
+.env.*
+
+# Plugin database (binary, regenerated)
+src-tauri/data/*.db
+
+# Logs
+*.log
