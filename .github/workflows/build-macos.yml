@@ -20,6 +20,8 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Install frontend dependencies
         run: npm install
@@ -27,16 +29,24 @@ jobs:
       - name: Generate macOS icons
         run: npx tauri icon src-tauri/icons/icon.png
 
-      - name: Build Tauri app
-        run: npx tauri build
+      - name: Build Tauri app (universal binary)
+        run: npx tauri build --target universal-apple-darwin
         env:
           TAURI_SIGNING_PRIVATE_KEY: ""
           VITE_SUPABASE_URL: "https://kqksmievwxwbfnhexcdy.supabase.co"
           VITE_SUPABASE_ANON_KEY: "sb_publishable_DR4sWS6mG1mtjmj17nk76g_ay-aIerf"
 
+      - name: Ad-hoc sign the app
+        run: |
+          APP=$(find src-tauri/target/universal-apple-darwin/release/bundle/macos -name "*.app" | head -1)
+          if [ -n "$APP" ]; then
+            codesign --force --deep --sign - "$APP"
+            echo "Ad-hoc signed: $APP"
+          fi
+
       - name: Rename DMG for release
         run: |
-          DMG=$(find src-tauri/target/release/bundle/dmg -name "*.dmg" | head -1)
+          DMG=$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
           if [ -n "$DMG" ]; then
             cp "$DMG" "Aevum_mac.dmg"
           fi
@@ -44,6 +54,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-arm64
+          name: macos-universal
           path: Aevum_mac.dmg
           if-no-files-found: error

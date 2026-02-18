@@ -160,14 +160,22 @@ pub fn start_polling(
                 // Check if it's a DAW
                 let daw_match =
                     daw_matcher::match_daw(&snapshot.process_name, &snapshot.title);
-                let is_daw = daw_match.is_some();
+
+                // System-level idle detection: if user hasn't touched mouse/keyboard,
+                // treat as inactive even if DAW is in the foreground.
+                let system_idle_secs = window_detector::get_system_idle_secs();
+                let system_is_idle = system_idle_secs >= idle_threshold_secs;
+
+                // DAW is only "actively used" if it's in the foreground AND user is not idle
+                let is_daw = daw_match.is_some() && !system_is_idle;
 
                 // Classify the window and determine phase
                 let mut detected_plugin: Option<String> = None;
                 let mut detected_plugin_category: Option<String> = None;
                 let mut raw_phase = "composing".to_string();
 
-                if let Some(ref daw) = daw_match {
+                if is_daw {
+                    let daw = daw_match.as_ref().unwrap();
                     let was_continuous = daw_continuous;
                     // How long since the DAW was last in foreground?
                     // A brief gap (save dialog, file picker) should NOT break continuity.
@@ -185,9 +193,12 @@ pub fn start_polling(
                     detected_plugin = classification.plugin_name;
                     detected_plugin_category = classification.plugin_category;
 
-                    // Extract project name from the main DAW window title
+                    // Extract project name from the main DAW window title.
+                    // On macOS without Screen Recording permission, titles are empty.
+                    // Fall back to "Untitled" so tracking still works.
                     let project_name =
-                        project_extractor::extract_project_name(daw.id, &snapshot.title);
+                        project_extractor::extract_project_name(daw.id, &snapshot.title)
+                            .or_else(|| Some("Untitled".to_string()));
 
                     if let Some(ref proj_name) = project_name {
                         let name_changed = match &current_project_name {
@@ -262,7 +273,7 @@ pub fn start_polling(
                         }
                     }
                 } else {
-                    // Not a DAW in foreground
+                    // Not a DAW in foreground, OR system is idle (no mouse/keyboard input)
                     daw_continuous = false;
 
                     let seconds_since_daw = if last_daw_seen > 0 {

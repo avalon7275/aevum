@@ -106,6 +106,7 @@ pub fn run() {
             commands::settings_commands::get_autostart_enabled,
             commands::settings_commands::toggle_autostart,
             commands::update_commands::check_for_update,
+            commands::platform_commands::check_platform_permissions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Aevum");
