@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+import { open } from "@tauri-apps/plugin-shell";
 import { useDashboardStore } from "../../stores/dashboardStore";
 import { useSessionStore } from "../../stores/sessionStore";
 import { DateNavigation } from "./DateNavigation";
@@ -7,6 +8,7 @@ import { DailySummaryPanel } from "./DailySummary";
 import { CategoryBreakdown } from "./CategoryBreakdown";
 import { DailyTimeline } from "./DailyTimeline";
 import { GoalProgress } from "./GoalProgress";
+import { ArrowUpRight } from "lucide-react";
 
 interface DashboardPageProps {
   onNavigate?: (view: string) => void;
@@ -16,6 +18,16 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
   const { selectedDate, daySummary, loading, fetchDaySummary } =
     useDashboardStore();
   const isTracking = useSessionStore((s) => s.pollingStatus.is_tracking);
+
+  // Promo pulse every 30s
+  const [promoPulse, setPromoPulse] = useState(false);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPromoPulse(true);
+      setTimeout(() => setPromoPulse(false), 3000);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch on mount and when date changes
   useEffect(() => {
@@ -78,6 +90,17 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             </div>
           )
         )}
+      </div>
+
+      {/* Promo */}
+      <div className="flex items-center justify-end px-4 py-2 shrink-0">
+        <button
+          onClick={() => open("https://risewithalex.com")}
+          className={`promo-link flex items-center gap-1.5 text-[11px]${promoPulse ? " promo-bright" : ""}`}
+        >
+          Tracking your time is the first step. Turning it into a career is next.
+          <ArrowUpRight size={10} className="shrink-0" />
+        </button>
       </div>
     </div>
   );

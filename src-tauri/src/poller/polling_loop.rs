@@ -195,10 +195,18 @@ pub fn start_polling(
 
                     // Extract project name from the main DAW window title.
                     // On macOS without Screen Recording permission, titles are empty.
-                    // Fall back to "Untitled" so tracking still works.
+                    // Fall back to "Untitled" only when the title is empty (macOS case).
+                    // Do NOT fall back for non-empty titles (e.g. plugin windows, mixers)
+                    // as that would overwrite the real project name.
                     let project_name =
                         project_extractor::extract_project_name(daw.id, &snapshot.title)
-                            .or_else(|| Some("Untitled".to_string()));
+                            .or_else(|| {
+                                if snapshot.title.trim().is_empty() {
+                                    Some("Untitled".to_string())
+                                } else {
+                                    None
+                                }
+                            });
 
                     if let Some(ref proj_name) = project_name {
                         let name_changed = match &current_project_name {

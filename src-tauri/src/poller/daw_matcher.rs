@@ -65,25 +65,15 @@ static DAW_SIGNATURES: &[DawSignature] = &[
 ];
 
 /// Check if the foreground window belongs to a known DAW.
-/// Checks process name first (fast path), then falls back to window title.
-pub fn match_daw(process_name: &str, window_title: &str) -> Option<DawMatch> {
+/// Only matches on process name (exe / macOS app owner name).
+/// Title patterns are NOT used alone — any program (IDE, browser, chat) could
+/// have a DAW name in its window title, causing false positives.
+pub fn match_daw(process_name: &str, _window_title: &str) -> Option<DawMatch> {
     let process_lower = process_name.to_lowercase();
-    let title_lower = window_title.to_lowercase();
 
     for sig in DAW_SIGNATURES {
-        // Fast path: match process name
         for pattern in sig.process_patterns {
             if process_lower.contains(pattern) {
-                return Some(DawMatch {
-                    id: sig.id,
-                    name: sig.name,
-                });
-            }
-        }
-
-        // Fallback: match window title
-        for pattern in sig.title_patterns {
-            if title_lower.contains(&pattern.to_lowercase()) {
                 return Some(DawMatch {
                     id: sig.id,
                     name: sig.name,
@@ -120,10 +110,11 @@ mod tests {
     }
 
     #[test]
-    fn test_title_fallback() {
+    fn test_no_title_only_match() {
+        // Title-only matching is disabled to prevent false positives
+        // (e.g. an IDE with "Cubase Pro" in a chat tab title)
         let m = match_daw("unknown.exe", "Ableton Live 12 - My Track");
-        assert!(m.is_some());
-        assert_eq!(m.unwrap().id, "ableton");
+        assert!(m.is_none());
     }
 
     // macOS app names (kCGWindowOwnerName returns these)
@@ -167,5 +158,18 @@ mod tests {
         let m = match_daw("studio one", "My Song - Studio One");
         assert!(m.is_some());
         assert_eq!(m.unwrap().id, "studio_one");
+    }
+
+    #[test]
+    fn test_ide_with_daw_in_title() {
+        // An IDE discussing "Cubase Pro" should NOT match as a DAW
+        let m = match_daw("anti-gravity.exe", "Music Production Cubase Pro Setup - Anti-Gravity");
+        assert!(m.is_none());
+    }
+
+    #[test]
+    fn test_browser_with_daw_in_title() {
+        let m = match_daw("chrome.exe", "REAPER Tutorial - YouTube - Google Chrome");
+        assert!(m.is_none());
     }
 }

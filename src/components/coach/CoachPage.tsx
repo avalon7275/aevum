@@ -11,17 +11,24 @@ import {
   Lock,
 } from "lucide-react";
 
+function toDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function getMonday(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
+  d.setHours(12, 0, 0, 0);
   return d;
 }
 
 function formatDateRange(weekStart: string): string {
-  const start = new Date(weekStart + "T00:00:00");
+  const start = new Date(weekStart + "T12:00:00");
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
@@ -55,7 +62,7 @@ export function CoachPage() {
   const [selectedWeek, setSelectedWeek] = useState(() => {
     const lastMonday = getMonday(new Date());
     lastMonday.setDate(lastMonday.getDate() - 7);
-    return lastMonday.toISOString().slice(0, 10);
+    return toDateStr(lastMonday);
   });
 
   // Load cached report whenever the selected week changes
@@ -68,12 +75,12 @@ export function CoachPage() {
   };
 
   const navigateWeek = (dir: -1 | 1) => {
-    const d = new Date(selectedWeek + "T00:00:00");
+    const d = new Date(selectedWeek + "T12:00:00");
     d.setDate(d.getDate() + dir * 7);
     const lastMonday = getMonday(new Date());
     lastMonday.setDate(lastMonday.getDate() - 7);
     if (d > lastMonday) return;
-    setSelectedWeek(d.toISOString().slice(0, 10));
+    setSelectedWeek(toDateStr(d));
   };
 
   const isCurrentAnalysis = weekStart === selectedWeek;
