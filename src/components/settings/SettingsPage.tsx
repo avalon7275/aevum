@@ -14,7 +14,6 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import { supabase } from "../../lib/supabase";
 
 interface AppSettings {
   polling: {
@@ -42,12 +41,10 @@ interface AppSettings {
 }
 
 export function SettingsPage() {
-  const { user, tier, signOut, openCheckout, openPortal } = useAuthStore();
+  const { user, tier, signOut, openCheckout, openPortal, authError, myReferralCode, referralCount } = useAuthStore();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [autostart, setAutostart] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [referralCode, setReferralCode] = useState<string | null>(null);
-  const [referralCount, setReferralCount] = useState(0);
   const [copied, setCopied] = useState(false);
   const [appVersion, setAppVersion] = useState("");
 
@@ -55,21 +52,7 @@ export function SettingsPage() {
     invoke<AppSettings>("get_app_settings").then(setSettings);
     invoke<boolean>("get_autostart_enabled").then(setAutostart);
     getVersion().then(setAppVersion);
-
-    if (user) {
-      supabase
-        .from("profiles")
-        .select("referral_code, referral_count")
-        .eq("id", user.id)
-        .single()
-        .then(({ data }) => {
-          if (data) {
-            setReferralCode(data.referral_code);
-            setReferralCount(data.referral_count || 0);
-          }
-        });
-    }
-  }, [user]);
+  }, []);
 
   const save = async (updated: AppSettings) => {
     setSettings(updated);
@@ -143,34 +126,41 @@ export function SettingsPage() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-white/40">
-                Pro plan active. Manage billing, update payment, or cancel.
-              </p>
-              <button
-                onClick={openPortal}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/40 hover:text-white/60 hover:bg-white/5 rounded-md transition-colors shrink-0 ml-4"
-              >
-                <CreditCard size={12} />
-                Manage
-              </button>
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-white/40">
+                  Pro plan active. Manage billing, update payment, or cancel.
+                </p>
+                <button
+                  onClick={openPortal}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/40 hover:text-white/60 hover:bg-white/5 rounded-md transition-colors shrink-0 ml-4"
+                >
+                  <CreditCard size={12} />
+                  Manage
+                </button>
+              </div>
+              {authError === "no_subscription" && (
+                <p className="text-xs text-amber-400/70 mt-2">
+                  Your Pro access is from a referral, not a subscription. Nothing to manage here.
+                </p>
+              )}
             </div>
           )}
         </Section>
 
         {/* Referral */}
-        {user && referralCode && (
+        {user && myReferralCode && (
           <Section title="Referral" icon={<Gift size={14} className="text-white/30" />}>
             <p className="text-xs text-white/40 mb-2">
-              Share your code. When a friend goes Pro, you both get a free month.
+              Share your code. When someone signs up with it, you both get a free month of Pro.
             </p>
             <div className="flex items-center gap-2">
               <div className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white/70 font-mono select-all">
-                {referralCode}
+                {myReferralCode}
               </div>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(referralCode);
+                  navigator.clipboard.writeText(myReferralCode);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}

@@ -48,46 +48,6 @@ Deno.serve(async (req) => {
         return new Response("DB error", { status: 500 });
       }
       console.log(`Upgraded user ${userId} to pro`);
-
-      // Credit referrer if this user was referred
-      try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("referred_by")
-          .eq("id", userId)
-          .single();
-
-        if (profile?.referred_by) {
-          const { data: referrer } = await supabase
-            .from("profiles")
-            .select("stripe_customer_id")
-            .eq("id", profile.referred_by)
-            .single();
-
-          if (referrer?.stripe_customer_id) {
-            // Apply $7 credit to referrer's Stripe account
-            await stripe.customers.createBalanceTransaction(
-              referrer.stripe_customer_id,
-              { amount: -700, currency: "usd" },
-            );
-            console.log(`Credited referrer ${profile.referred_by} with $7`);
-          }
-
-          // Increment referrer's referral count
-          const { data: ref } = await supabase
-            .from("profiles")
-            .select("referral_count")
-            .eq("id", profile.referred_by)
-            .single();
-          await supabase
-            .from("profiles")
-            .update({ referral_count: (ref?.referral_count || 0) + 1 })
-            .eq("id", profile.referred_by);
-        }
-      } catch (refErr) {
-        console.error("Referral credit failed:", refErr);
-        // Don't fail the webhook for referral errors
-      }
     }
   }
 

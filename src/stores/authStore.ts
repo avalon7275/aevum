@@ -8,6 +8,12 @@ const PAYMENT_LINK = "https://buy.stripe.com/7sYaEX1fQeaY4wxdAk3ks0h";
 type Tier = "free" | "pro";
 type AuthStep = "email" | "otp";
 
+interface ProfileData {
+  tier: Tier;
+  myReferralCode: string | null;
+  referralCount: number;
+}
+
 interface AuthState {
   user: User | null;
   tier: Tier;
@@ -17,6 +23,8 @@ interface AuthState {
   authEmail: string;
   authError: string | null;
   referralCode: string;
+  myReferralCode: string | null;
+  referralCount: number;
   initialize: () => Promise<void>;
   sendOtp: (email: string) => Promise<void>;
   verifyOtp: (email: string, token: string) => Promise<void>;
@@ -39,6 +47,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   authEmail: "",
   authError: null,
   referralCode: "",
+  myReferralCode: null,
+  referralCount: 0,
 
   initialize: async () => {
     try {
@@ -54,8 +64,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           await supabase.auth.signOut();
           set({ user: null, tier: "free", loading: false });
         } else {
-          const tier = await fetchTier(user.id);
-          set({ user, tier, loading: false });
+          const profile = await fetchProfile(user.id);
+          set({ user, ...profile, loading: false });
         }
       } else {
         set({ loading: false });
@@ -64,10 +74,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Listen for auth state changes (token refresh, sign in/out)
       supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session?.user) {
-          const tier = await fetchTier(session.user.id);
-          set({ user: session.user, tier });
+          const profile = await fetchProfile(session.user.id);
+          set({ user: session.user, ...profile });
         } else {
-          set({ user: null, tier: "free" });
+          set({ user: null, tier: "free", myReferralCode: null, referralCount: 0 });
         }
       });
     } catch (e) {
@@ -128,7 +138,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ user: null, tier: "free", showAuth: false });
+    set({ user: null, tier: "free", showAuth: false, myReferralCode: null, referralCount: 0 });
   },
 
   openAuth: () => {
@@ -147,68 +157,73 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get();
     if (!user) return;
 
-    let url = `${PAYMENT_LINK}?prefilled_email=${encodeURIComponent(user.email || "")}&client_reference_id=${user.id}`;
-
-    // Check if user was referred, auto-apply promo code for first month free
-    try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("referred_by")
-        .eq("id", user.id)
-        .single();
-
-      if (data?.referred_by) {
-        url += `&prefilled_promo_code=AEVUMREF`;
-      }
-    } catch {
-      // Continue without promo code
-    }
-
+    const url = `${PAYMENT_LINK}?prefilled_email=${encodeURIComponent(user.email || "")}&client_reference_id=${user.id}`;
     open(url);
   },
 
   openPortal: async () => {
+    set({ authError: null });
     const session = await supabase.auth.getSession();
     const token = session.data.session?.access_token;
     if (!token) return;
 
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-portal`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          "Content-Type": "application/json",
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-portal`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+            "Content-Type": "application/json",
+          },
         },
-      },
-    );
+      );
 
-    if (res.ok) {
-      const { url } = await res.json();
-      if (url) open(url);
+      if (res.ok) {
+        const { url } = await res.json();
+        if (url) open(url);
+      } else {
+        set({ authError: "no_subscription" });
+      }
+    } catch {
+      set({ authError: "no_subscription" });
     }
   },
 
   refreshTier: async () => {
     const { user } = get();
     if (!user) return;
-    const tier = await fetchTier(user.id);
-    set({ tier });
+    const profile = await fetchProfile(user.id);
+    set(profile);
   },
 
   isPro: () => get().tier === "pro",
 }));
 
-async function fetchTier(userId: string): Promise<Tier> {
+async function fetchProfile(userId: string): Promise<ProfileData> {
   try {
     const { data } = await supabase
       .from("profiles")
-      .select("tier")
+      .select("tier, referral_code, referral_count, pro_until")
       .eq("id", userId)
       .single();
-    return (data?.tier as Tier) || "free";
+
+    // Stripe subscription ("pro") always wins.
+    // Otherwise check if referral pro_until is still active.
+    let effectiveTier: Tier = "free";
+    if (data?.tier === "pro") {
+      effectiveTier = "pro";
+    } else if (data?.pro_until && new Date(data.pro_until) > new Date()) {
+      effectiveTier = "pro";
+    }
+
+    return {
+      tier: effectiveTier,
+      myReferralCode: data?.referral_code || null,
+      referralCount: data?.referral_count || 0,
+    };
   } catch {
-    return "free";
+    return { tier: "free", myReferralCode: null, referralCount: 0 };
   }
 }

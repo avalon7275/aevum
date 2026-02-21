@@ -47,8 +47,8 @@ static DAW_SIGNATURES: &[DawSignature] = &[
     DawSignature {
         name: "Studio One",
         id: "studio_one",
-        process_patterns: &["studio one"],
-        title_patterns: &["Studio One"],
+        process_patterns: &["studio one", "studio pro"],
+        title_patterns: &["Studio One", "Studio Pro"],
     },
     DawSignature {
         name: "Bitwig Studio",
@@ -156,6 +156,13 @@ mod tests {
     #[test]
     fn test_macos_studio_one() {
         let m = match_daw("studio one", "My Song - Studio One");
+        assert!(m.is_some());
+        assert_eq!(m.unwrap().id, "studio_one");
+    }
+
+    #[test]
+    fn test_macos_studio_pro_8() {
+        let m = match_daw("Studio Pro 8", "My Song - Studio Pro 8");
         assert!(m.is_some());
         assert_eq!(m.unwrap().id, "studio_one");
     }
