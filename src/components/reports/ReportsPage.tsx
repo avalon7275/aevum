@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useDashboardStore } from "../../stores/dashboardStore";
 import { DateNavigation } from "../dashboard/DateNavigation";
-import { formatDuration } from "../../lib/formatters";
+import { formatDuration, todayStr } from "../../lib/formatters";
 import type { DaySummary } from "../../stores/dashboardStore";
 
 export function ReportsPage() {
@@ -13,7 +13,7 @@ export function ReportsPage() {
   }, [selectedDate, fetchDaySummary]);
 
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayStr();
     if (selectedDate !== today) return;
     const interval = setInterval(() => {
       fetchDaySummary(selectedDate);

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { todayStr, toDateStr } from "../lib/formatters";
 
 interface TimelineBlock {
   category: string;
@@ -92,14 +93,10 @@ interface DashboardState {
   goToToday: () => void;
 }
 
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + "T12:00:00");
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return toDateStr(d);
 }
 
 export const useDashboardStore = create<DashboardState>((set, get) => ({

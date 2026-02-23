@@ -41,7 +41,7 @@ interface AppSettings {
 }
 
 export function SettingsPage() {
-  const { user, tier, signOut, openCheckout, openPortal, authError, myReferralCode, referralCount } = useAuthStore();
+  const { user, tier, signOut, openCheckout, openLifetime, openPortal, authError, myReferralCode, referralCount } = useAuthStore();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [autostart, setAutostart] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -113,17 +113,26 @@ export function SettingsPage() {
         {/* Subscription */}
         <Section title="Subscription">
           {tier !== "pro" ? (
-            <div className="flex items-center justify-between">
+            <div className="space-y-3">
               <p className="text-xs text-white/40">
                 Upgrade to unlock Timeline, Reports, Coach, and Billing.
               </p>
-              <button
-                onClick={openCheckout}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 rounded-md transition-colors shrink-0 ml-4"
-              >
-                <Sparkles size={12} />
-                Upgrade to Pro
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={openCheckout}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 rounded-md transition-colors"
+                >
+                  <Sparkles size={12} />
+                  $7/mo
+                </button>
+                <button
+                  onClick={openLifetime}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 rounded-md transition-colors"
+                >
+                  <Sparkles size={12} />
+                  $97 Lifetime
+                </button>
+              </div>
             </div>
           ) : (
             <div>

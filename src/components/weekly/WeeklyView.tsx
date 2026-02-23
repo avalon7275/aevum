@@ -13,7 +13,7 @@ import {
   type HeatmapDay,
 } from "../../stores/weeklyStore";
 import { WeeklyComparison } from "./WeeklyComparison";
-import { formatDuration } from "../../lib/formatters";
+import { formatDuration, todayStr, toDateStr } from "../../lib/formatters";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -350,7 +350,7 @@ function WeekAreaChart({ days }: { days: DayTotal[] }) {
 
         {/* X labels */}
         {pts.map((p, i) => {
-          const isToday = days[i].date === new Date().toISOString().slice(0, 10);
+          const isToday = days[i].date === todayStr();
           return (
             <text
               key={`xl-${i}`}
@@ -507,7 +507,7 @@ function YearHeatmap({
                 const mondayOffset = dow === 0 ? 6 : dow - 1;
                 const monday = new Date(wd);
                 monday.setDate(monday.getDate() - mondayOffset);
-                weekStartDate = monday.toISOString().slice(0, 10);
+                weekStartDate = toDateStr(monday);
               }
               const isSelected = weekStartDate === selectedWeek;
 

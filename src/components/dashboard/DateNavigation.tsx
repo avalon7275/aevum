@@ -1,11 +1,12 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useDashboardStore } from "../../stores/dashboardStore";
+import { todayStr } from "../../lib/formatters";
 
 export function DateNavigation() {
   const { selectedDate, goToPrevDay, goToNextDay, goToToday } =
     useDashboardStore();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStr();
   const isToday = selectedDate === today;
 
   const displayDate = new Date(selectedDate + "T12:00:00").toLocaleDateString(

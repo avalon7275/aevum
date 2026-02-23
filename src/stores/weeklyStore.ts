@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { toDateStr } from "../lib/formatters";
 
 interface CategoryTotal {
   category: string;
@@ -34,13 +35,13 @@ function getMonday(dateStr?: string): string {
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setDate(diff);
-  return d.toISOString().slice(0, 10);
+  return toDateStr(d);
 }
 
 function addWeeks(dateStr: string, weeks: number): string {
   const d = new Date(dateStr + "T12:00:00");
   d.setDate(d.getDate() + weeks * 7);
-  return d.toISOString().slice(0, 10);
+  return toDateStr(d);
 }
 
 export interface HeatmapDay {

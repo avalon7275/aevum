@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useCoachStore } from "../../stores/coachStore";
+import { toDateStr } from "../../lib/formatters";
 import {
   Brain,
   RefreshCw,
@@ -10,13 +11,6 @@ import {
   ChevronRight,
   Lock,
 } from "lucide-react";
-
-function toDateStr(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 
 function getMonday(date: Date): Date {
   const d = new Date(date);

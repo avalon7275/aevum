@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Settings } from "lucide-react";
 import { useDashboardStore, type GoalStreak } from "../../stores/dashboardStore";
-import { formatDuration } from "../../lib/formatters";
+import { formatDuration, todayStr } from "../../lib/formatters";
 
 export function GoalProgress() {
   const { goalStreak, dailyGoalMinutes, fetchGoalStreak, saveDailyGoal } =
@@ -138,7 +138,7 @@ function StreakDots({ streak }: { streak: GoalStreak }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {streak.last_14_days.map((day) => {
-        const isToday = day.date === new Date().toISOString().slice(0, 10);
+        const isToday = day.date === todayStr();
         return (
           <div
             key={day.date}

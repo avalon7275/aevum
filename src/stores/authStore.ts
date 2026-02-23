@@ -3,7 +3,8 @@ import { open } from "@tauri-apps/plugin-shell";
 import { supabase } from "../lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
-const PAYMENT_LINK = "https://buy.stripe.com/7sYaEX1fQeaY4wxdAk3ks0h";
+const PAYMENT_LINK_MONTHLY = "https://buy.stripe.com/7sYaEX1fQeaY4wxdAk3ks0h";
+const PAYMENT_LINK_LIFETIME = "https://buy.stripe.com/14A28re2C3wk5AB9k43ks0i";
 
 type Tier = "free" | "pro";
 type AuthStep = "email" | "otp";
@@ -33,6 +34,7 @@ interface AuthState {
   closeAuth: () => void;
   setReferralCode: (code: string) => void;
   openCheckout: () => Promise<void>;
+  openLifetime: () => Promise<void>;
   openPortal: () => Promise<void>;
   refreshTier: () => Promise<void>;
   isPro: () => boolean;
@@ -132,6 +134,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     }
 
+    // Add email to Brevo "Aevum Signups" list (fire-and-forget)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/brevo-subscribe`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+        }).catch(() => {});
+      }
+    });
+
     // Auth state change listener handles setting user/tier
     set({ showAuth: false, authStep: "email", authEmail: "", authError: null, referralCode: "" });
   },
@@ -157,7 +172,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get();
     if (!user) return;
 
-    const url = `${PAYMENT_LINK}?prefilled_email=${encodeURIComponent(user.email || "")}&client_reference_id=${user.id}`;
+    const url = `${PAYMENT_LINK_MONTHLY}?prefilled_email=${encodeURIComponent(user.email || "")}&client_reference_id=${user.id}`;
+    open(url);
+  },
+
+  openLifetime: async () => {
+    const { user } = get();
+    if (!user) return;
+
+    const url = `${PAYMENT_LINK_LIFETIME}?prefilled_email=${encodeURIComponent(user.email || "")}&client_reference_id=${user.id}`;
     open(url);
   },
 

@@ -1,3 +1,16 @@
+/** Format a Date as YYYY-MM-DD using local timezone (never UTC). */
+export function toDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Today's date as YYYY-MM-DD in local timezone. */
+export function todayStr(): string {
+  return toDateStr(new Date());
+}
+
 export function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);

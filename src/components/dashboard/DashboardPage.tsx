@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-shell";
 import { useDashboardStore } from "../../stores/dashboardStore";
+import { todayStr } from "../../lib/formatters";
 import { useSessionStore } from "../../stores/sessionStore";
 import { DateNavigation } from "./DateNavigation";
 import { ActiveSession } from "./ActiveSession";
@@ -36,7 +37,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
 
   // Auto-refresh every 30s for today
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayStr();
     if (selectedDate !== today) return;
 
     const interval = setInterval(() => {
