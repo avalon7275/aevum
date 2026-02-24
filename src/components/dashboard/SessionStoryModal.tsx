@@ -24,7 +24,7 @@ interface StoryPlugin {
 
 interface SessionStory {
   session_id: number;
-  project_name: string;
+  track_name: string;
   daw: string;
   started_at: number;
   ended_at: number;
@@ -92,7 +92,7 @@ export function SessionStoryModal({ sessionId, onClose }: Props) {
         pixelRatio: 2,
       });
       const link = document.createElement("a");
-      link.download = `session-${story?.project_name || "story"}.png`;
+      link.download = `session-${story?.track_name || "story"}.png`;
       link.href = dataUrl;
       link.click();
     } catch (e) {
@@ -103,7 +103,7 @@ export function SessionStoryModal({ sessionId, onClose }: Props) {
   };
 
   const shareText = story
-    ? `Just wrapped a ${formatDuration(story.duration_secs)} session on "${story.project_name}" with ${Math.round(story.focus_pct)}% focus. Tracked with Aevum.`
+    ? `Just wrapped a ${formatDuration(story.duration_secs)} session on "${story.track_name}" with ${Math.round(story.focus_pct)}% focus. Tracked with Aevum.`
     : "";
 
   const handleShareTwitter = () => {
@@ -156,9 +156,9 @@ export function SessionStoryModal({ sessionId, onClose }: Props) {
                   </span>
                 </div>
 
-                {/* Project + DAW + Duration */}
+                {/* Track + DAW + Duration */}
                 <h2 className="text-lg font-semibold text-white/90 mb-1 leading-tight">
-                  {story.project_name}
+                  {story.track_name}
                 </h2>
                 <div className="flex items-center gap-2 text-xs text-white/40">
                   <span>{DAW_LABELS[story.daw] || story.daw}</span>

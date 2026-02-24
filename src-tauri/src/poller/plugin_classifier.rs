@@ -42,9 +42,18 @@ pub fn classify_window(
         };
     }
 
-    // 4. Unknown plugin: a window in the DAW process that isn't a known view
-    // or the main project window. This catches third-party and stock plugins
-    // not yet in the database.
+    // 4. Filter out common DAW dialogs/menus that aren't plugins
+    if is_daw_dialog(title) {
+        return ClassificationResult {
+            phase: "composing".to_string(),
+            plugin_name: None,
+            plugin_category: None,
+        };
+    }
+
+    // 5. Unknown plugin: a window in the DAW process that isn't a known view,
+    // dialog, or the main project window. This catches third-party and stock
+    // plugins not yet in the database.
     let name = clean_plugin_title(title);
     if name.len() >= 2 {
         ClassificationResult {
@@ -76,6 +85,93 @@ fn is_main_daw_window(title: &str, daw_id: &str) -> bool {
         "logic" => lower.contains("logic pro"),
         _ => false,
     }
+}
+
+/// Filter out common DAW dialog and menu windows that aren't plugins.
+fn is_daw_dialog(title: &str) -> bool {
+    let lower = title.to_lowercase();
+
+    // Exact matches for very common short dialog titles
+    const EXACT: &[&str] = &[
+        "save as",
+        "save",
+        "open",
+        "export",
+        "import",
+        "render",
+        "bounce",
+        "preferences",
+        "settings",
+        "options",
+        "color",
+        "colour",
+        "new",
+        "print",
+        "undo history",
+        "tempo",
+    ];
+    if EXACT.iter().any(|d| lower == *d) {
+        return true;
+    }
+
+    // Prefix/contains patterns for DAW actions and OS file dialogs
+    const PATTERNS: &[&str] = &[
+        "save project",
+        "save as",
+        "open project",
+        "open file",
+        "new project",
+        "export audio",
+        "export audio mixdown",
+        "audio mixdown",
+        "add track",
+        "add instrument track",
+        "add audio track",
+        "add midi track",
+        "add bus",
+        "add group",
+        "add fx channel",
+        "add effect",
+        "remove track",
+        "delete track",
+        "track name",
+        "rename track",
+        "import audio",
+        "import midi",
+        "bounce to disk",
+        "bounce in place",
+        "render in place",
+        "render to file",
+        "freeze track",
+        "unfreeze track",
+        "project setup",
+        "audio connections",
+        "studio setup",
+        "vst plug-in manager",
+        "plug-in manager",
+        "plugin manager",
+        "midi device manager",
+        "key commands",
+        "macro",
+        "pool",
+        "markers",
+        "tempo track",
+        "signature track",
+        "chord track",
+        "track versions",
+        "track presets",
+        "quantize",
+        "transpose",
+        "workspace",
+        "customize toolbar",
+        "select color",
+        "set track color",
+    ];
+    if PATTERNS.iter().any(|p| lower.contains(p)) {
+        return true;
+    }
+
+    false
 }
 
 /// Clean up a plugin window title to extract a usable plugin name.

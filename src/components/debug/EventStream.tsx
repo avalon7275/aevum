@@ -38,9 +38,9 @@ export function EventStream() {
           </span>
         )}
 
-        {pollingStatus.current_project && (
+        {pollingStatus.current_track && (
           <span className="text-sm font-medium text-white/90">
-            {pollingStatus.current_project}
+            {pollingStatus.current_track}
           </span>
         )}
 

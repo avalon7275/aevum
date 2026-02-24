@@ -19,13 +19,13 @@ pub struct CoachDay {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct CoachSession {
-    pub project_name: String,
+    pub track_name: String,
     pub started_at: i64,
     pub duration_secs: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct CoachProject {
+pub struct CoachTrack {
     pub name: String,
     pub total_secs: i64,
     pub session_count: i64,
@@ -36,7 +36,7 @@ pub struct CoachProject {
 pub struct CoachWeekTotals {
     pub total_secs: i64,
     pub session_count: i64,
-    pub unique_projects: i64,
+    pub unique_tracks: i64,
     pub avg_daily_secs: i64,
 }
 
@@ -46,7 +46,7 @@ pub struct CoachData {
     pub week_end: String,
     pub daily_breakdown: Vec<CoachDay>,
     pub sessions: Vec<CoachSession>,
-    pub project_stats: Vec<CoachProject>,
+    pub track_stats: Vec<CoachTrack>,
     pub week_totals: CoachWeekTotals,
     pub prev_week_totals: Option<CoachWeekTotals>,
 }
@@ -175,32 +175,32 @@ pub fn get_coach_data(
         }
     }
 
-    // ── Fetch sessions with project names ──
+    // ── Fetch sessions with track names ──
     let mut sess_stmt = conn.prepare(
         "SELECT p.name, s.started_at, s.duration_secs
          FROM sessions s
-         INNER JOIN projects p ON s.project_id = p.id
+         INNER JOIN tracks p ON s.track_id = p.id
          WHERE s.started_at >= ?1 AND s.started_at <= ?2
          ORDER BY s.started_at ASC",
     )?;
     let sessions: Vec<CoachSession> = sess_stmt
         .query_map(rusqlite::params![week_start_ts, week_end_ts], |row| {
             Ok(CoachSession {
-                project_name: row.get(0)?,
+                track_name: row.get(0)?,
                 started_at: row.get(1)?,
                 duration_secs: row.get(2)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
 
-    // ── Project stats ──
-    let mut proj_map: HashMap<String, (i64, i64)> = HashMap::new(); // name -> (total_secs, session_count)
+    // ── Track stats ──
+    let mut track_map: HashMap<String, (i64, i64)> = HashMap::new(); // name -> (total_secs, session_count)
     for s in &sessions {
-        let entry = proj_map.entry(s.project_name.clone()).or_insert((0, 0));
+        let entry = track_map.entry(s.track_name.clone()).or_insert((0, 0));
         entry.0 += s.duration_secs;
         entry.1 += 1;
     }
-    let mut project_stats: Vec<CoachProject> = proj_map
+    let mut track_stats: Vec<CoachTrack> = track_map
         .into_iter()
         .map(|(name, (total_secs, session_count))| {
             let avg_session_secs = if session_count > 0 {
@@ -208,7 +208,7 @@ pub fn get_coach_data(
             } else {
                 0
             };
-            CoachProject {
+            CoachTrack {
                 name,
                 total_secs,
                 session_count,
@@ -216,12 +216,12 @@ pub fn get_coach_data(
             }
         })
         .collect();
-    project_stats.sort_by(|a, b| b.total_secs.cmp(&a.total_secs));
+    track_stats.sort_by(|a, b| b.total_secs.cmp(&a.total_secs));
 
     // ── Week totals ──
     let total_secs: i64 = daily_breakdown.iter().map(|d| d.total_secs).sum();
     let total_sessions: i64 = sessions.len() as i64;
-    let unique_projects = project_stats.len() as i64;
+    let unique_tracks = track_stats.len() as i64;
     let days_with_data = daily_breakdown.iter().filter(|d| d.total_secs > 0).count() as i64;
     let avg_daily_secs = if days_with_data > 0 {
         total_secs / days_with_data
@@ -232,7 +232,7 @@ pub fn get_coach_data(
     let week_totals = CoachWeekTotals {
         total_secs,
         session_count: total_sessions,
-        unique_projects,
+        unique_tracks,
         avg_daily_secs,
     };
 
@@ -246,7 +246,7 @@ pub fn get_coach_data(
         week_end: week_end_str.to_string(),
         daily_breakdown,
         sessions,
-        project_stats,
+        track_stats,
         week_totals,
         prev_week_totals,
     })
@@ -296,8 +296,8 @@ fn get_week_totals(
         |row| row.get(0),
     )?;
 
-    let unique_projects: i64 = conn.query_row(
-        "SELECT COUNT(DISTINCT project_id) FROM sessions WHERE started_at >= ?1 AND started_at <= ?2",
+    let unique_tracks: i64 = conn.query_row(
+        "SELECT COUNT(DISTINCT track_id) FROM sessions WHERE started_at >= ?1 AND started_at <= ?2",
         rusqlite::params![start_ts, end_ts],
         |row| row.get(0),
     )?;
@@ -319,7 +319,7 @@ fn get_week_totals(
     Ok(Some(CoachWeekTotals {
         total_secs,
         session_count,
-        unique_projects,
+        unique_tracks,
         avg_daily_secs,
     }))
 }

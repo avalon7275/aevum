@@ -25,6 +25,13 @@ export function formatDuration(totalSeconds: number): string {
   return `${seconds}s`;
 }
 
+/** Format time as hours:minutes (e.g., "7:30" for 7 hours and 30 minutes). */
+export function formatTimeAsHoursMinutes(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return `${hours}:${minutes.toString().padStart(2, "0")}`;
+}
+
 export function formatTimestamp(unixTimestamp: number): string {
   const date = new Date(unixTimestamp * 1000);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });

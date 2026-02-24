@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { DashboardPage } from "./components/dashboard/DashboardPage";
-import { ProjectsPage } from "./components/projects/ProjectsPage";
+import { TracksPage } from "./components/tracks/TracksPage";
 import { ReportsPage } from "./components/reports/ReportsPage";
 import { WeeklyView } from "./components/weekly/WeeklyView";
 import { CoachPage } from "./components/coach/CoachPage";
@@ -10,7 +10,7 @@ import { BillingPage } from "./components/billing/BillingPage";
 import { SettingsPage } from "./components/settings/SettingsPage";
 import { usePollingStatus } from "./hooks/usePollingStatus";
 import { useRestReminder } from "./hooks/useRestReminder";
-import { ProjectDetailView } from "./components/projects/ProjectDetailView";
+import { TrackDetailView } from "./components/tracks/TrackDetailView";
 import { AuthModal } from "./components/auth/AuthModal";
 import { UpgradePrompt } from "./components/auth/UpgradePrompt";
 import { useAuthStore } from "./stores/authStore";
@@ -31,7 +31,7 @@ import {
 
 const appWindow = getCurrentWindow();
 
-type View = "dashboard" | "projects" | "timeline" | "reports" | "coach" | "billing" | "settings";
+type View = "dashboard" | "tracks" | "timeline" | "reports" | "coach" | "billing" | "settings";
 
 function App() {
   usePollingStatus();
@@ -81,10 +81,10 @@ function App() {
             tooltip="Dashboard"
           />
           <SidebarNavButton
-            active={view === "projects"}
-            onClick={() => setView("projects")}
+            active={view === "tracks"}
+            onClick={() => setView("tracks")}
             icon={<FolderKanban size={16} />}
-            tooltip="Projects"
+            tooltip="Tracks"
             locked={!isPro}
           />
           <SidebarNavButton
@@ -191,8 +191,8 @@ function App() {
 
         {/* View content */}
         {view === "dashboard" && <DashboardPage onNavigate={(v) => setView(v as View)} />}
-        {view === "projects" &&
-          (isPro ? <ProjectsPage /> : <UpgradePrompt feature="projects" />)}
+        {view === "tracks" &&
+          (isPro ? <TracksPage /> : <UpgradePrompt feature="tracks" />)}
         {view === "timeline" &&
           (isPro ? <WeeklyView /> : <UpgradePrompt feature="timeline" />)}
         {view === "reports" &&
@@ -204,8 +204,8 @@ function App() {
         {view === "settings" && <SettingsPage />}
       </div>
 
-      {/* Project detail overlay */}
-      <ProjectDetailView />
+      {/* Track detail overlay */}
+      <TrackDetailView />
 
       {/* Auth modal */}
       <AuthModal />

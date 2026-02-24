@@ -11,12 +11,12 @@ use crate::poller::plugin_classifier;
 
 pub fn create_session(
     conn: &Connection,
-    project_id: i64,
+    track_id: i64,
     started_at: i64,
 ) -> Result<i64, AppError> {
     conn.execute(
-        "INSERT INTO sessions (project_id, started_at, is_active) VALUES (?1, ?2, 1)",
-        rusqlite::params![project_id, started_at],
+        "INSERT INTO sessions (track_id, started_at, is_active) VALUES (?1, ?2, 1)",
+        rusqlite::params![track_id, started_at],
     )?;
     Ok(conn.last_insert_rowid())
 }
@@ -29,12 +29,12 @@ pub fn end_session(conn: &Connection, session_id: i64, ended_at: i64) -> Result<
         rusqlite::params![ended_at, session_id],
     )?;
 
-    // Update the project's total_seconds
+    // Update the track's total_seconds
     conn.execute(
-        "UPDATE projects SET total_seconds = (
-            SELECT COALESCE(SUM(duration_secs), 0) FROM sessions WHERE project_id = projects.id
+        "UPDATE tracks SET total_seconds = (
+            SELECT COALESCE(SUM(duration_secs), 0) FROM sessions WHERE track_id = tracks.id
          )
-         WHERE id = (SELECT project_id FROM sessions WHERE id = ?1)",
+         WHERE id = (SELECT track_id FROM sessions WHERE id = ?1)",
         rusqlite::params![session_id],
     )?;
 
@@ -43,13 +43,13 @@ pub fn end_session(conn: &Connection, session_id: i64, ended_at: i64) -> Result<
 
 pub fn get_active_session(conn: &Connection) -> Result<Option<Session>, AppError> {
     let result = conn.query_row(
-        "SELECT id, project_id, started_at, ended_at, duration_secs, is_active
+        "SELECT id, track_id, started_at, ended_at, duration_secs, is_active
          FROM sessions WHERE is_active = 1 LIMIT 1",
         [],
         |row| {
             Ok(Session {
                 id: row.get(0)?,
-                project_id: row.get(1)?,
+                track_id: row.get(1)?,
                 started_at: row.get(2)?,
                 ended_at: row.get(3)?,
                 duration_secs: row.get(4)?,
@@ -71,7 +71,7 @@ pub fn get_sessions_for_date(
     end_of_day: i64,
 ) -> Result<Vec<Session>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, project_id, started_at, ended_at, duration_secs, is_active
+        "SELECT id, track_id, started_at, ended_at, duration_secs, is_active
          FROM sessions
          WHERE started_at >= ?1 AND started_at < ?2
          ORDER BY started_at ASC",
@@ -81,7 +81,7 @@ pub fn get_sessions_for_date(
         .query_map(rusqlite::params![start_of_day, end_of_day], |row| {
             Ok(Session {
                 id: row.get(0)?,
-                project_id: row.get(1)?,
+                track_id: row.get(1)?,
                 started_at: row.get(2)?,
                 ended_at: row.get(3)?,
                 duration_secs: row.get(4)?,
@@ -113,7 +113,7 @@ pub struct StoryPlugin {
 #[derive(Debug, Clone, Serialize)]
 pub struct SessionStory {
     pub session_id: i64,
-    pub project_name: String,
+    pub track_name: String,
     pub daw: String,
     pub started_at: i64,
     pub ended_at: i64,
@@ -130,12 +130,12 @@ pub fn get_session_story(
     session_id: i64,
     plugin_db: Option<&Arc<PluginDatabase>>,
 ) -> Result<SessionStory, AppError> {
-    // Get session + project info
-    let (project_name, daw, started_at, ended_at, duration_secs): (String, String, i64, i64, i64) =
+    // Get session + track info
+    let (track_name, daw, started_at, ended_at, duration_secs): (String, String, i64, i64, i64) =
         conn.query_row(
             "SELECT p.name, p.daw, s.started_at, COALESCE(s.ended_at, s.started_at + s.duration_secs), s.duration_secs
              FROM sessions s
-             INNER JOIN projects p ON s.project_id = p.id
+             INNER JOIN tracks p ON s.track_id = p.id
              WHERE s.id = ?1",
             [session_id],
             |row| {
@@ -253,7 +253,7 @@ pub fn get_session_story(
 
     Ok(SessionStory {
         session_id,
-        project_name,
+        track_name,
         daw,
         started_at,
         ended_at,

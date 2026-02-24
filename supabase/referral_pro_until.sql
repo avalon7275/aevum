@@ -32,7 +32,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -- 3. Create trigger (drop first for idempotency)
 DROP TRIGGER IF EXISTS on_referral_set ON profiles;

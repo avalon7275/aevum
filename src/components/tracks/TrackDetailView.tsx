@@ -1,8 +1,8 @@
 import { X, Clock, Layers, Calendar } from "lucide-react";
 import {
-  useProjectDetailStore,
-  type ProjectDetail,
-} from "../../stores/projectDetailStore";
+  useTrackDetailStore,
+  type TrackDetail,
+} from "../../stores/trackDetailStore";
 import {
   formatDuration,
   formatDate,
@@ -11,18 +11,18 @@ import {
   CATEGORY_LABELS,
 } from "../../lib/formatters";
 
-export function ProjectDetailView() {
-  const { selectedProjectId, projectDetail, loading, closeProject } =
-    useProjectDetailStore();
+export function TrackDetailView() {
+  const { selectedTrackId, trackDetail, loading, closeTrack } =
+    useTrackDetailStore();
 
-  if (!selectedProjectId) return null;
+  if (!selectedTrackId) return null;
 
   return (
     <>
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/40 z-40"
-        onClick={closeProject}
+        onClick={closeTrack}
       />
 
       {/* Panel */}
@@ -30,13 +30,13 @@ export function ProjectDetailView() {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#111111]">
           <div className="flex-1 min-w-0">
-            {projectDetail ? (
+            {trackDetail ? (
               <>
                 <h2 className="text-sm font-semibold text-white/90 truncate">
-                  {projectDetail.name}
+                  {trackDetail.name}
                 </h2>
                 <span className="text-xs text-white/30">
-                  {projectDetail.daw}
+                  {trackDetail.daw}
                 </span>
               </>
             ) : (
@@ -44,7 +44,7 @@ export function ProjectDetailView() {
             )}
           </div>
           <button
-            onClick={closeProject}
+            onClick={closeTrack}
             className="p-1.5 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors ml-2"
           >
             <X size={16} />
@@ -59,11 +59,11 @@ export function ProjectDetailView() {
             </div>
           )}
 
-          {projectDetail && !loading && (
+          {trackDetail && !loading && (
             <>
-              <ProjectStats detail={projectDetail} />
-              <ProjectCategories detail={projectDetail} />
-              <RecentSessions detail={projectDetail} />
+              <TrackStats detail={trackDetail} />
+              <TrackCategories detail={trackDetail} />
+              <RecentSessions detail={trackDetail} />
             </>
           )}
         </div>
@@ -72,7 +72,7 @@ export function ProjectDetailView() {
   );
 }
 
-function ProjectStats({ detail }: { detail: ProjectDetail }) {
+function TrackStats({ detail }: { detail: TrackDetail }) {
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="bg-white/[0.03] border border-white/5 rounded-lg px-3 py-3">
@@ -115,7 +115,7 @@ function ProjectStats({ detail }: { detail: ProjectDetail }) {
   );
 }
 
-function ProjectCategories({ detail }: { detail: ProjectDetail }) {
+function TrackCategories({ detail }: { detail: TrackDetail }) {
   const totals = detail.category_totals.filter(
     (c) => c.category !== "idle" && c.category !== "break"
   );
@@ -164,7 +164,7 @@ function ProjectCategories({ detail }: { detail: ProjectDetail }) {
   );
 }
 
-function RecentSessions({ detail }: { detail: ProjectDetail }) {
+function RecentSessions({ detail }: { detail: TrackDetail }) {
   if (detail.recent_sessions.length === 0) return null;
 
   return (

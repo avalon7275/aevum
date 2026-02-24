@@ -1,6 +1,6 @@
-/// Extract the project name from a DAW window title.
+/// Extract the track name from a DAW window title.
 /// Each DAW has a different title format, so we dispatch based on daw_id.
-pub fn extract_project_name(daw_id: &str, window_title: &str) -> Option<String> {
+pub fn extract_track_name(daw_id: &str, window_title: &str) -> Option<String> {
     let name = match daw_id {
         "cubase" => extract_cubase(window_title),
         "ableton" => extract_ableton(window_title),
@@ -18,9 +18,9 @@ pub fn extract_project_name(daw_id: &str, window_title: &str) -> Option<String> 
         .filter(|n| n.len() >= 2)
 }
 
-/// Cubase 14+: "Cubase Pro Project - My Song" → "My Song"
-/// Cubase older: "My Song - Cubase Pro 13" → "My Song"
-/// Plugin windows like "04 - Kontakt 8" or "Transport Panel" → None
+/// Cubase 14+: "Cubase Pro Project - My Song" -> "My Song"
+/// Cubase older: "My Song - Cubase Pro 13" -> "My Song"
+/// Plugin windows like "04 - Kontakt 8" or "Transport Panel" -> None
 fn extract_cubase(title: &str) -> Option<String> {
     let lower = title.to_lowercase();
 
@@ -46,7 +46,7 @@ fn extract_cubase(title: &str) -> Option<String> {
     None
 }
 
-/// Ableton: "My Track - Ableton Live 12" → "My Track"
+/// Ableton: "My Track - Ableton Live 12" -> "My Track"
 fn extract_ableton(title: &str) -> Option<String> {
     let lower = title.to_lowercase();
     if let Some(idx) = lower.rfind(" - ableton") {
@@ -65,10 +65,10 @@ fn extract_ableton(title: &str) -> Option<String> {
     None
 }
 
-/// FL Studio: "FL Studio 2025 - My Song.flp" → "My Song"
+/// FL Studio: "FL Studio 2025 - My Song.flp" -> "My Song"
 fn extract_fl_studio(title: &str) -> Option<String> {
     let lower = title.to_lowercase();
-    // Pattern: "FL Studio ... - ProjectName.flp"
+    // Pattern: "FL Studio ... - TrackName.flp"
     if let Some(idx) = lower.find("fl studio") {
         let after_fl = &title[idx..];
         if let Some(dash_idx) = after_fl.find(" - ") {
@@ -85,7 +85,7 @@ fn extract_fl_studio(title: &str) -> Option<String> {
     None
 }
 
-/// Reaper: "My Song - REAPER v7.25" → "My Song"
+/// Reaper: "My Song - REAPER v7.25" -> "My Song"
 fn extract_reaper(title: &str) -> Option<String> {
     let lower = title.to_lowercase();
     if let Some(idx) = lower.rfind(" - reaper") {
@@ -97,7 +97,7 @@ fn extract_reaper(title: &str) -> Option<String> {
     None
 }
 
-/// Pro Tools: "My Song - Pro Tools" → "My Song"
+/// Pro Tools: "My Song - Pro Tools" -> "My Song"
 fn extract_pro_tools(title: &str) -> Option<String> {
     let lower = title.to_lowercase();
     if let Some(idx) = lower.rfind(" - pro tools") {
@@ -109,7 +109,7 @@ fn extract_pro_tools(title: &str) -> Option<String> {
     None
 }
 
-/// Studio One: "My Song - Studio One" → "My Song"
+/// Studio One: "My Song - Studio One" -> "My Song"
 fn extract_studio_one(title: &str) -> Option<String> {
     let lower = title.to_lowercase();
     if let Some(idx) = lower.rfind(" - studio one") {
@@ -121,7 +121,7 @@ fn extract_studio_one(title: &str) -> Option<String> {
     None
 }
 
-/// Bitwig: "My Song - Bitwig Studio 5.2" → "My Song"
+/// Bitwig: "My Song - Bitwig Studio 5.2" -> "My Song"
 fn extract_bitwig(title: &str) -> Option<String> {
     let lower = title.to_lowercase();
     if let Some(idx) = lower.rfind(" - bitwig") {
@@ -133,7 +133,7 @@ fn extract_bitwig(title: &str) -> Option<String> {
     None
 }
 
-/// Logic Pro: "My Song - Logic Pro" → "My Song"
+/// Logic Pro: "My Song - Logic Pro" -> "My Song"
 fn extract_logic(title: &str) -> Option<String> {
     let lower = title.to_lowercase();
     if let Some(idx) = lower.rfind(" - logic pro") {
@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn test_cubase() {
         assert_eq!(
-            extract_project_name("cubase", "My Song - Cubase Pro 14"),
+            extract_track_name("cubase", "My Song - Cubase Pro 14"),
             Some("My Song".to_string())
         );
     }
@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn test_fl_studio() {
         assert_eq!(
-            extract_project_name("fl_studio", "FL Studio 2025 - My Song.flp"),
+            extract_track_name("fl_studio", "FL Studio 2025 - My Song.flp"),
             Some("My Song".to_string())
         );
     }
@@ -179,7 +179,7 @@ mod tests {
     #[test]
     fn test_reaper() {
         assert_eq!(
-            extract_project_name("reaper", "Epic Cue - REAPER v7.25"),
+            extract_track_name("reaper", "Epic Cue - REAPER v7.25"),
             Some("Epic Cue".to_string())
         );
     }
@@ -187,14 +187,14 @@ mod tests {
     #[test]
     fn test_ableton() {
         assert_eq!(
-            extract_project_name("ableton", "My Track - Ableton Live 12"),
+            extract_track_name("ableton", "My Track - Ableton Live 12"),
             Some("My Track".to_string())
         );
     }
 
     #[test]
-    fn test_no_project() {
-        // DAW at start screen, no project open
-        assert_eq!(extract_project_name("cubase", "Cubase Pro 14"), None);
+    fn test_no_track() {
+        // DAW at start screen, no track open
+        assert_eq!(extract_track_name("cubase", "Cubase Pro 14"), None);
     }
 }

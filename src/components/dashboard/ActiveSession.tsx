@@ -45,7 +45,7 @@ export function ActiveSession() {
           />
           <div>
             <div className="text-sm font-medium text-white/90">
-              {pollingStatus.current_project}
+              {pollingStatus.current_track}
             </div>
             <div className="text-xs text-white/40">
               {pollingStatus.current_daw}

@@ -3,9 +3,9 @@ use std::sync::{Arc, Mutex};
 use rusqlite::Connection;
 use tauri::State;
 
-use crate::db::models::{Event, Project, Session};
+use crate::db::models::{Event, Track, Session};
 use crate::db::queries::sessions::SessionStory;
-use crate::db::queries::{events, projects, sessions};
+use crate::db::queries::{events, sessions, tracks};
 use crate::error::AppError;
 use crate::plugin_db::PluginDatabase;
 
@@ -52,11 +52,11 @@ pub async fn get_recent_events(
 }
 
 #[tauri::command]
-pub async fn get_all_projects(
+pub async fn get_all_tracks(
     conn: State<'_, Mutex<Connection>>,
-) -> Result<Vec<Project>, AppError> {
+) -> Result<Vec<Track>, AppError> {
     let conn = conn.lock().map_err(|e| AppError::Database(e.to_string()))?;
-    projects::get_all_projects(&conn)
+    tracks::get_all_tracks(&conn)
 }
 
 #[tauri::command]
@@ -67,4 +67,22 @@ pub async fn get_session_story(
 ) -> Result<SessionStory, AppError> {
     let conn = conn.lock().map_err(|e| AppError::Database(e.to_string()))?;
     sessions::get_session_story(&conn, session_id, Some(&plugin_db))
+}
+
+#[tauri::command]
+pub async fn archive_track(
+    track_id: i64,
+    conn: State<'_, Mutex<Connection>>,
+) -> Result<(), AppError> {
+    let conn = conn.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    tracks::archive_track(&conn, track_id)
+}
+
+#[tauri::command]
+pub async fn unarchive_track(
+    track_id: i64,
+    conn: State<'_, Mutex<Connection>>,
+) -> Result<(), AppError> {
+    let conn = conn.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    tracks::unarchive_track(&conn, track_id)
 }

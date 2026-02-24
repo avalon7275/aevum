@@ -1,20 +1,114 @@
-import { Receipt } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Search, Receipt, Plus } from "lucide-react";
+import { useBillingStore } from "../../stores/billingStore";
+import { useBillingDetailStore } from "../../stores/billingDetailStore";
+import { formatDate } from "../../lib/formatters";
+import { CreateProjectModal } from "./CreateProjectModal";
+import { BillingProjectDetail } from "./BillingProjectDetail";
 
 export function BillingPage() {
+  const { projects, loading, searchQuery, fetchProjects, setSearchQuery } =
+    useBillingStore();
+  const openProject = useBillingDetailStore((s) => s.openProject);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  const filtered = projects.filter((p) =>
+    searchQuery
+      ? p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      : true
+  );
+
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8">
-      <div className="flex flex-col items-center max-w-sm text-center">
-        <div className="w-14 h-14 rounded-full bg-indigo-500/10 flex items-center justify-center mb-5">
-          <Receipt size={24} className="text-indigo-400/60" />
+    <>
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#111111]">
+          <div className="flex items-center gap-3">
+            <h1 className="text-sm font-semibold text-white/90">
+              Billing Projects
+            </h1>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-1.5 px-2 py-1 text-xs bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 rounded text-indigo-300 hover:text-indigo-200 transition-colors"
+            >
+              <Plus size={12} />
+              New Project
+            </button>
+          </div>
+          <div className="relative">
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/25"
+            />
+            <input
+              type="text"
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-52 pl-8 pr-3 py-1.5 text-xs bg-white/5 border border-white/5 rounded-md text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/15"
+            />
+          </div>
         </div>
-        <h2 className="text-xl font-semibold text-white/90 mb-2">
-          Project Billing
-        </h2>
-        <p className="text-sm text-white/40 leading-relaxed">
-          Coming soon. Set hourly rates, track project costs, and export client
-          timesheets.
-        </p>
+
+        {/* Project list */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {loading && projects.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-white/20">
+              <Receipt size={32} className="mb-3 opacity-50" />
+              <span className="text-sm">
+                {searchQuery
+                  ? "No projects match your search"
+                  : "No billing projects yet"}
+              </span>
+              {!searchQuery && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="mt-4 px-3 py-1.5 text-xs bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 rounded text-indigo-300 hover:text-indigo-200 transition-colors"
+                >
+                  Create your first project
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {filtered.map((project) => (
+                <button
+                  key={project.id}
+                  onClick={() => openProject(project.id)}
+                  className="w-full flex items-center gap-4 px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors text-left group"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-white/80 group-hover:text-indigo-400 transition-colors truncate">
+                        {project.name}
+                      </span>
+                    </div>
+                    <span className="text-xs text-white/25">
+                      Created {formatDate(project.created_at)}
+                    </span>
+                  </div>
+                  <span className="text-sm text-white/50 font-mono shrink-0">
+                    ${project.hourly_rate.toFixed(2)}/hr
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {showCreateModal && (
+        <CreateProjectModal onClose={() => setShowCreateModal(false)} />
+      )}
+      <BillingProjectDetail />
+    </>
   );
 }

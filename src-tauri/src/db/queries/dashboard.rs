@@ -23,7 +23,7 @@ pub struct CategoryTotal {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct ProjectTotal {
+pub struct TrackTotal {
     pub id: i64,
     pub name: String,
     pub daw: String,
@@ -74,7 +74,7 @@ pub struct DaySummary {
     pub total_secs: i64,
     pub session_count: i64,
     pub category_totals: Vec<CategoryTotal>,
-    pub projects: Vec<ProjectTotal>,
+    pub tracks: Vec<TrackTotal>,
     pub timeline: Vec<TimelineBlock>,
     pub focus: FocusReport,
     pub plugins: PluginReport,
@@ -90,7 +90,7 @@ pub fn get_day_summary(
         "SELECT e.timestamp, e.category, e.process_name, e.window_title, p.daw
          FROM events e
          INNER JOIN sessions s ON e.session_id = s.id
-         INNER JOIN projects p ON s.project_id = p.id
+         INNER JOIN tracks p ON s.track_id = p.id
          WHERE e.timestamp >= ?1 AND e.timestamp <= ?2
          ORDER BY e.timestamp ASC",
     )?;
@@ -155,18 +155,18 @@ pub fn get_day_summary(
         |row| row.get(0),
     )?;
 
-    // Project totals
-    let mut proj_stmt = conn.prepare(
+    // Track totals
+    let mut track_stmt = conn.prepare(
         "SELECT p.id, p.name, p.daw, COALESCE(SUM(s.duration_secs), 0) as total
          FROM sessions s
-         INNER JOIN projects p ON s.project_id = p.id
+         INNER JOIN tracks p ON s.track_id = p.id
          WHERE s.started_at >= ?1 AND s.started_at <= ?2
          GROUP BY p.id
          ORDER BY total DESC",
     )?;
-    let projects: Vec<ProjectTotal> = proj_stmt
+    let tracks: Vec<TrackTotal> = track_stmt
         .query_map(rusqlite::params![start_of_day, end_of_day], |row| {
-            Ok(ProjectTotal {
+            Ok(TrackTotal {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 daw: row.get(2)?,
@@ -179,7 +179,7 @@ pub fn get_day_summary(
         total_secs,
         session_count,
         category_totals,
-        projects,
+        tracks,
         timeline,
         focus,
         plugins,
@@ -431,7 +431,7 @@ pub struct DayTotal {
     pub date: String,
     pub total_secs: i64,
     pub session_count: i64,
-    pub projects: Vec<ProjectTotal>,
+    pub tracks: Vec<TrackTotal>,
     pub category_totals: Vec<CategoryTotal>,
 }
 
@@ -441,7 +441,7 @@ pub struct WeekSummary {
     pub week_end: String,
     pub total_secs: i64,
     pub total_sessions: i64,
-    pub unique_projects: i64,
+    pub unique_tracks: i64,
     pub days: Vec<DayTotal>,
 }
 
@@ -465,7 +465,7 @@ pub fn get_week_summary(
         "SELECT e.timestamp, e.category, p.id, p.name, p.daw
          FROM events e
          INNER JOIN sessions s ON e.session_id = s.id
-         INNER JOIN projects p ON s.project_id = p.id
+         INNER JOIN tracks p ON s.track_id = p.id
          WHERE e.timestamp >= ?1 AND e.timestamp <= ?2
          ORDER BY e.timestamp ASC",
     )?;
@@ -536,9 +536,9 @@ pub fn get_week_summary(
         }
     }
 
-    // Unique projects across the week
-    let unique_projects: i64 = conn.query_row(
-        "SELECT COUNT(DISTINCT project_id) FROM sessions WHERE started_at >= ?1 AND started_at <= ?2",
+    // Unique tracks across the week
+    let unique_tracks: i64 = conn.query_row(
+        "SELECT COUNT(DISTINCT track_id) FROM sessions WHERE started_at >= ?1 AND started_at <= ?2",
         rusqlite::params![week_start, week_end],
         |row| row.get(0),
     )?;
@@ -570,30 +570,30 @@ pub fn get_week_summary(
 
             let total_secs: i64 = category_totals.iter().map(|c| c.total_secs).sum();
 
-            // Compute project totals from events
-            let mut proj_map: HashMap<i64, (String, String, i64)> = HashMap::new();
+            // Compute track totals from events
+            let mut track_map: HashMap<i64, (String, String, i64)> = HashMap::new();
             for (_, _, pid, name, daw) in evts {
-                let entry = proj_map
+                let entry = track_map
                     .entry(*pid)
                     .or_insert((name.clone(), daw.clone(), 0));
                 entry.2 += tick;
             }
-            let mut projects: Vec<ProjectTotal> = proj_map
+            let mut tracks: Vec<TrackTotal> = track_map
                 .into_iter()
-                .map(|(id, (name, daw, total_secs))| ProjectTotal {
+                .map(|(id, (name, daw, total_secs))| TrackTotal {
                     id,
                     name,
                     daw,
                     total_secs,
                 })
                 .collect();
-            projects.sort_by(|a, b| b.total_secs.cmp(&a.total_secs));
+            tracks.sort_by(|a, b| b.total_secs.cmp(&a.total_secs));
 
             days.push(DayTotal {
                 date: date_str,
                 total_secs,
                 session_count,
-                projects,
+                tracks,
                 category_totals,
             });
         } else {
@@ -601,7 +601,7 @@ pub fn get_week_summary(
                 date: date_str,
                 total_secs: 0,
                 session_count: 0,
-                projects: vec![],
+                tracks: vec![],
                 category_totals: vec![],
             });
         }
@@ -615,7 +615,7 @@ pub fn get_week_summary(
         week_end: week_end_str,
         total_secs,
         total_sessions,
-        unique_projects,
+        unique_tracks,
         days,
     })
 }
@@ -682,7 +682,7 @@ pub fn get_year_heatmap(
     Ok(result)
 }
 
-// ─── Project Detail ──────────────────────────────────────────────────────────
+// ─── Track Detail ────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SessionSummary {
@@ -693,7 +693,7 @@ pub struct SessionSummary {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct ProjectDetail {
+pub struct TrackDetail {
     pub id: i64,
     pub name: String,
     pub daw: String,
@@ -705,36 +705,36 @@ pub struct ProjectDetail {
     pub recent_sessions: Vec<SessionSummary>,
 }
 
-pub fn get_project_detail(
+pub fn get_track_detail(
     conn: &Connection,
-    project_id: i64,
-) -> Result<ProjectDetail, AppError> {
-    // Get project row
+    track_id: i64,
+) -> Result<TrackDetail, AppError> {
+    // Get track row
     let (name, daw, first_seen, last_seen, total_seconds): (String, String, i64, i64, i64) =
         conn.query_row(
-            "SELECT name, daw, first_seen, last_seen, total_seconds FROM projects WHERE id = ?1",
-            rusqlite::params![project_id],
+            "SELECT name, daw, first_seen, last_seen, total_seconds FROM tracks WHERE id = ?1",
+            rusqlite::params![track_id],
             |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
         )?;
 
     // Session count
     let session_count: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM sessions WHERE project_id = ?1",
-        rusqlite::params![project_id],
+        "SELECT COUNT(*) FROM sessions WHERE track_id = ?1",
+        rusqlite::params![track_id],
         |row| row.get(0),
     )?;
 
-    // Category totals from all events for this project
+    // Category totals from all events for this track
     let tick = 2i64;
     let mut cat_stmt = conn.prepare(
         "SELECT e.category
          FROM events e
          INNER JOIN sessions s ON e.session_id = s.id
-         WHERE s.project_id = ?1
+         WHERE s.track_id = ?1
          ORDER BY e.timestamp ASC",
     )?;
     let categories: Vec<String> = cat_stmt
-        .query_map(rusqlite::params![project_id], |row| row.get(0))?
+        .query_map(rusqlite::params![track_id], |row| row.get(0))?
         .collect::<Result<Vec<_>, _>>()?;
 
     let mut cat_map: HashMap<String, i64> = HashMap::new();
@@ -751,12 +751,12 @@ pub fn get_project_detail(
     let mut sess_stmt = conn.prepare(
         "SELECT id, started_at, ended_at, duration_secs
          FROM sessions
-         WHERE project_id = ?1
+         WHERE track_id = ?1
          ORDER BY started_at DESC
          LIMIT 10",
     )?;
     let recent_sessions: Vec<SessionSummary> = sess_stmt
-        .query_map(rusqlite::params![project_id], |row| {
+        .query_map(rusqlite::params![track_id], |row| {
             Ok(SessionSummary {
                 id: row.get(0)?,
                 started_at: row.get(1)?,
@@ -766,8 +766,8 @@ pub fn get_project_detail(
         })?
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(ProjectDetail {
-        id: project_id,
+    Ok(TrackDetail {
+        id: track_id,
         name,
         daw,
         first_seen,
@@ -791,7 +791,7 @@ pub struct CategoryShift {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct ProjectShift {
+pub struct TrackShift {
     pub name: String,
     pub this_week_secs: i64,
     pub last_week_secs: i64,
@@ -804,7 +804,7 @@ pub struct WeekComparison {
     pub this_week_total: i64,
     pub last_week_total: i64,
     pub category_shifts: Vec<CategoryShift>,
-    pub project_shifts: Vec<ProjectShift>,
+    pub track_shifts: Vec<TrackShift>,
     pub insight: String,
 }
 
@@ -835,13 +835,13 @@ pub fn get_week_comparison(
         Ok(map)
     };
 
-    // Helper: get project totals for a time range
-    let get_proj_totals = |start: i64, end: i64| -> Result<HashMap<String, i64>, AppError> {
+    // Helper: get track totals for a time range
+    let get_track_totals = |start: i64, end: i64| -> Result<HashMap<String, i64>, AppError> {
         let mut stmt = conn.prepare(
             "SELECT p.name
              FROM events e
              INNER JOIN sessions s ON e.session_id = s.id
-             INNER JOIN projects p ON s.project_id = p.id
+             INNER JOIN tracks p ON s.track_id = p.id
              WHERE e.timestamp >= ?1 AND e.timestamp <= ?2",
         )?;
         let names: Vec<String> = stmt
@@ -856,8 +856,8 @@ pub fn get_week_comparison(
 
     let this_cats = get_cat_totals(this_start, this_end)?;
     let last_cats = get_cat_totals(last_start, last_end)?;
-    let this_projs = get_proj_totals(this_start, this_end)?;
-    let last_projs = get_proj_totals(last_start, last_end)?;
+    let this_tracks = get_track_totals(this_start, this_end)?;
+    let last_tracks = get_track_totals(last_start, last_end)?;
 
     let this_week_total: i64 = this_cats.values().sum();
     let last_week_total: i64 = last_cats.values().sum();
@@ -893,15 +893,15 @@ pub fn get_week_comparison(
     }
     category_shifts.sort_by(|a, b| b.delta_secs.abs().cmp(&a.delta_secs.abs()));
 
-    // Build project shifts (only >5min delta)
-    let mut all_projs: std::collections::HashSet<String> = std::collections::HashSet::new();
-    all_projs.extend(this_projs.keys().cloned());
-    all_projs.extend(last_projs.keys().cloned());
+    // Build track shifts (only >5min delta)
+    let mut all_tracks: std::collections::HashSet<String> = std::collections::HashSet::new();
+    all_tracks.extend(this_tracks.keys().cloned());
+    all_tracks.extend(last_tracks.keys().cloned());
 
-    let mut project_shifts: Vec<ProjectShift> = Vec::new();
-    for name in &all_projs {
-        let this_secs = this_projs.get(name).copied().unwrap_or(0);
-        let last_secs = last_projs.get(name).copied().unwrap_or(0);
+    let mut track_shifts: Vec<TrackShift> = Vec::new();
+    for name in &all_tracks {
+        let this_secs = this_tracks.get(name).copied().unwrap_or(0);
+        let last_secs = last_tracks.get(name).copied().unwrap_or(0);
         let delta = this_secs - last_secs;
         if delta.abs() < 300 {
             continue;
@@ -911,7 +911,7 @@ pub fn get_week_comparison(
         } else {
             "down".to_string()
         };
-        project_shifts.push(ProjectShift {
+        track_shifts.push(TrackShift {
             name: name.clone(),
             this_week_secs: this_secs,
             last_week_secs: last_secs,
@@ -919,21 +919,21 @@ pub fn get_week_comparison(
             direction,
         });
     }
-    project_shifts.sort_by(|a, b| b.delta_secs.abs().cmp(&a.delta_secs.abs()));
+    track_shifts.sort_by(|a, b| b.delta_secs.abs().cmp(&a.delta_secs.abs()));
 
     // Generate natural language insight
     let insight = generate_comparison_insight(
         this_week_total,
         last_week_total,
         &category_shifts,
-        &project_shifts,
+        &track_shifts,
     );
 
     Ok(WeekComparison {
         this_week_total,
         last_week_total,
         category_shifts,
-        project_shifts,
+        track_shifts,
         insight,
     })
 }
@@ -942,7 +942,7 @@ fn generate_comparison_insight(
     this_total: i64,
     last_total: i64,
     cat_shifts: &[CategoryShift],
-    proj_shifts: &[ProjectShift],
+    track_shifts: &[TrackShift],
 ) -> String {
     if last_total == 0 {
         return "No data from last week to compare.".to_string();
@@ -968,8 +968,8 @@ fn generate_comparison_insight(
         }
     }
 
-    // Biggest project shift
-    if let Some(top) = proj_shifts.first() {
+    // Biggest track shift
+    if let Some(top) = track_shifts.first() {
         let dur = format_dur(top.delta_secs.abs());
         if top.direction == "up" {
             parts.push(format!("{} got {} more attention.", top.name, dur));

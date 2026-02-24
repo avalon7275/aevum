@@ -14,7 +14,7 @@ interface CategoryTotal {
   total_secs: number;
 }
 
-interface ProjectTotal {
+interface TrackTotal {
   id: number;
   name: string;
   daw: string;
@@ -59,7 +59,7 @@ export interface DaySummary {
   total_secs: number;
   session_count: number;
   category_totals: CategoryTotal[];
-  projects: ProjectTotal[];
+  tracks: TrackTotal[];
   timeline: TimelineBlock[];
   focus: FocusReport;
   plugins: PluginReport;

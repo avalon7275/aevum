@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Project {
+pub struct Track {
     pub id: i64,
     pub name: String,
     pub daw: String,
@@ -10,12 +10,13 @@ pub struct Project {
     pub total_seconds: i64,
     pub notes: String,
     pub archived: bool,
+    pub billing_project_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Session {
     pub id: i64,
-    pub project_id: i64,
+    pub track_id: i64,
     pub started_at: i64,
     pub ended_at: Option<i64>,
     pub duration_secs: i64,
@@ -50,7 +51,7 @@ pub struct Plugin {
 pub struct CategorySpan {
     pub id: i64,
     pub session_id: i64,
-    pub project_id: i64,
+    pub track_id: i64,
     pub category: String,
     pub started_at: i64,
     pub ended_at: Option<i64>,
@@ -61,7 +62,7 @@ pub struct CategorySpan {
 pub struct DailySummary {
     pub id: i64,
     pub date: String,
-    pub project_id: i64,
+    pub track_id: i64,
     pub total_seconds: i64,
     pub composing_secs: i64,
     pub arranging_secs: i64,
@@ -72,4 +73,13 @@ pub struct DailySummary {
     pub break_secs: i64,
     pub idle_secs: i64,
     pub session_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BillingProject {
+    pub id: i64,
+    pub name: String,
+    pub hourly_rate: f64,
+    pub created_at: i64,
+    pub archived: bool,
 }

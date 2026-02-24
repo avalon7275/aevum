@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function DailySummaryPanel({ summary, onNavigate }: Props) {
-  const topProject = summary.projects[0];
+  const topTrack = summary.tracks[0];
 
   return (
     <div className="grid grid-cols-3 gap-3">
@@ -21,13 +21,13 @@ export function DailySummaryPanel({ summary, onNavigate }: Props) {
         icon={<Layers size={16} />}
         label="Sessions"
         value={String(summary.session_count)}
-        onClick={onNavigate ? () => onNavigate("projects") : undefined}
+        onClick={onNavigate ? () => onNavigate("tracks") : undefined}
       />
       <StatCard
         icon={<FolderOpen size={16} />}
-        label="Top Project"
-        value={topProject ? topProject.name : "None"}
-        onClick={onNavigate ? () => onNavigate("projects") : undefined}
+        label="Top Track"
+        value={topTrack ? topTrack.name : "None"}
+        onClick={onNavigate ? () => onNavigate("tracks") : undefined}
       />
     </div>
   );

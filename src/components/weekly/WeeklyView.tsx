@@ -139,7 +139,7 @@ export function WeeklyView() {
 function WeeklyStats({
   summary,
 }: {
-  summary: { total_secs: number; total_sessions: number; unique_projects: number };
+  summary: { total_secs: number; total_sessions: number; unique_tracks: number };
 }) {
   return (
     <div className="grid grid-cols-3 gap-3">
@@ -155,8 +155,8 @@ function WeeklyStats({
       />
       <StatCard
         icon={<FolderOpen size={16} />}
-        label="Projects"
-        value={String(summary.unique_projects)}
+        label="Tracks"
+        value={String(summary.unique_tracks)}
       />
     </div>
   );

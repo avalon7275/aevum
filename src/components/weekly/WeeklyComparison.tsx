@@ -13,7 +13,7 @@ export function WeeklyComparison({ comparison }: Props) {
 
   const hasShifts =
     comparison.category_shifts.length > 0 ||
-    comparison.project_shifts.length > 0;
+    comparison.track_shifts.length > 0;
 
   return (
     <div className="bg-white/[0.03] border border-white/5 rounded-lg p-4">

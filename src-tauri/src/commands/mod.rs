@@ -1,3 +1,4 @@
+pub mod billing_commands;
 pub mod coach_commands;
 pub mod dashboard_commands;
 pub mod platform_commands;

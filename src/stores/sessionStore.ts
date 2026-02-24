@@ -12,7 +12,7 @@ export const useSessionStore = create<SessionState>((set) => ({
     is_running: false,
     is_tracking: false,
     current_daw: null,
-    current_project: null,
+    current_track: null,
     session_duration_secs: 0,
     current_category: "idle",
   },

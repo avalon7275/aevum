@@ -7,7 +7,7 @@ interface CategoryTotal {
   total_secs: number;
 }
 
-interface ProjectTotal {
+interface TrackTotal {
   name: string;
   daw: string;
   total_secs: number;
@@ -17,7 +17,7 @@ export interface DayTotal {
   date: string;
   total_secs: number;
   session_count: number;
-  projects: ProjectTotal[];
+  tracks: TrackTotal[];
   category_totals: CategoryTotal[];
 }
 
@@ -26,7 +26,7 @@ export interface WeekSummary {
   week_end: string;
   total_secs: number;
   total_sessions: number;
-  unique_projects: number;
+  unique_tracks: number;
   days: DayTotal[];
 }
 
@@ -57,7 +57,7 @@ interface CategoryShift {
   direction: string;
 }
 
-interface ProjectShift {
+interface TrackShift {
   name: string;
   this_week_secs: number;
   last_week_secs: number;
@@ -69,7 +69,7 @@ export interface WeekComparison {
   this_week_total: number;
   last_week_total: number;
   category_shifts: CategoryShift[];
-  project_shifts: ProjectShift[];
+  track_shifts: TrackShift[];
   insight: string;
 }
 

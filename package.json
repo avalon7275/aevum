@@ -1,13 +1,14 @@
 {
   "name": "aevum",
   "private": true,
-  "version": "0.1.6",
+  "version": "0.1.7",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "build:release": "tauri build && node post-build.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",

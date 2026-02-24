@@ -1,4 +1,4 @@
-export interface Project {
+export interface Track {
   id: number;
   name: string;
   daw: string;
@@ -7,11 +7,12 @@ export interface Project {
   total_seconds: number;
   notes: string;
   archived: boolean;
+  billing_project_id: number | null;
 }
 
 export interface Session {
   id: number;
-  project_id: number;
+  track_id: number;
   started_at: number;
   ended_at: number | null;
   duration_secs: number;
@@ -33,7 +34,7 @@ export interface PollingStatus {
   is_running: boolean;
   is_tracking: boolean;
   current_daw: string | null;
-  current_project: string | null;
+  current_track: string | null;
   session_duration_secs: number;
   current_category: string;
 }

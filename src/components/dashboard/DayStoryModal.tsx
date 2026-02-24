@@ -76,7 +76,7 @@ export function DayStoryModal({ summary, date, onClose }: Props) {
     (c) => c.category !== "idle" && c.category !== "break"
   );
   const productiveSecs = totals.reduce((sum, c) => sum + c.total_secs, 0);
-  const topProject = summary.projects[0];
+  const topTrack = summary.tracks[0];
 
   // Focus percentage from the focus report
   const focusPct =
@@ -151,18 +151,18 @@ export function DayStoryModal({ summary, date, onClose }: Props) {
                 value={String(summary.session_count)}
                 label={summary.session_count === 1 ? "Session" : "Sessions"}
               />
-              {topProject && (
+              {topTrack && (
                 <div className="mt-1">
                   <div className="text-[10px] text-white/20 uppercase tracking-wider mb-0.5">
-                    Top Project
+                    Top Track
                   </div>
                   <div className="text-xs font-medium text-white/70 truncate">
-                    {topProject.name}
+                    {topTrack.name}
                   </div>
                   <div className="text-[10px] text-white/30">
-                    {DAW_LABELS[topProject.daw] || topProject.daw}{" "}
+                    {DAW_LABELS[topTrack.daw] || topTrack.daw}{" "}
                     <span className="text-white/15 mx-0.5">|</span>
-                    {formatDuration(topProject.total_secs)}
+                    {formatDuration(topTrack.total_secs)}
                   </div>
                 </div>
               )}

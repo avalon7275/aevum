@@ -14,7 +14,7 @@ pub async fn get_polling_status(
         is_running: ctrl.is_running && !ctrl.is_paused,
         is_tracking: false,
         current_daw: None,
-        current_project: None,
+        current_track: None,
         session_duration_secs: 0,
         current_category: if ctrl.is_paused { "paused".to_string() } else { "idle".to_string() },
     })

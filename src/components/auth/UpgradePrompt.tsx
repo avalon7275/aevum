@@ -17,10 +17,10 @@ const FEATURE_COPY: Record<string, { title: string; description: string }> = {
     description:
       "Get AI-powered insights about your workflow. Spot inefficiencies, track flow states, get personalized tips to produce smarter and avoid burnout.",
   },
-  projects: {
-    title: "Unlock Project Library",
+  tracks: {
+    title: "Unlock Track Library",
     description:
-      "Browse all your projects in one place. See total time, session history, and activity breakdowns for every track you've worked on.",
+      "Browse all your tracks in one place. See total time, session history, and activity breakdowns for every track you've worked on.",
   },
   billing: {
     title: "Unlock Project Billing",

@@ -5,7 +5,7 @@ use tauri::{Manager, State};
 
 use crate::config::settings::AppSettings;
 use crate::db::queries::dashboard::{
-    self, DaySummary, GoalStreak, HeatmapDay, ProjectDetail, WeekComparison, WeekSummary,
+    self, DaySummary, GoalStreak, HeatmapDay, TrackDetail, WeekComparison, WeekSummary,
 };
 use crate::error::AppError;
 use crate::plugin_db::PluginDatabase;
@@ -66,12 +66,12 @@ pub async fn get_year_heatmap(
 }
 
 #[tauri::command]
-pub async fn get_project_detail(
-    project_id: i64,
+pub async fn get_track_detail(
+    track_id: i64,
     conn: State<'_, Mutex<Connection>>,
-) -> Result<ProjectDetail, AppError> {
+) -> Result<TrackDetail, AppError> {
     let conn = conn.lock().map_err(|e| AppError::Database(e.to_string()))?;
-    dashboard::get_project_detail(&conn, project_id)
+    dashboard::get_track_detail(&conn, track_id)
 }
 
 #[tauri::command]

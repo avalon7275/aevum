@@ -5,12 +5,12 @@ use rusqlite::Connection;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
-use crate::db::queries::{events, projects, sessions};
+use crate::db::queries::{events, sessions, tracks};
 use crate::plugin_db::PluginDatabase;
 use crate::poller::activity_categorizer::ActivityCategorizer;
 use crate::poller::daw_matcher;
 use crate::poller::plugin_classifier;
-use crate::poller::project_extractor;
+use crate::poller::track_extractor;
 use crate::poller::window_detector;
 
 #[derive(Debug, Clone, Serialize)]
@@ -18,7 +18,7 @@ pub struct PollingStatus {
     pub is_running: bool,
     pub is_tracking: bool,
     pub current_daw: Option<String>,
-    pub current_project: Option<String>,
+    pub current_track: Option<String>,
     pub session_duration_secs: i64,
     pub current_category: String,
 }
@@ -75,9 +75,9 @@ pub fn start_polling(
             }
 
             let mut current_session_id: Option<i64> = None;
-            let mut current_project_id: Option<i64> = None;
+            let mut current_track_id: Option<i64> = None;
             let mut current_daw_name: Option<String> = None;
-            let mut current_project_name: Option<String> = None;
+            let mut current_track_name: Option<String> = None;
             let mut last_daw_seen: i64 = 0;
             let mut session_started_at: i64 = 0;
             let mut daw_continuous = false; // Was DAW in foreground on the previous tick?
@@ -106,7 +106,7 @@ pub fn start_polling(
                             is_running: false,
                             is_tracking: current_session_id.is_some(),
                             current_daw: current_daw_name.clone(),
-                            current_project: current_project_name.clone(),
+                            current_track: current_track_name.clone(),
                             session_duration_secs: if current_session_id.is_some() {
                                 chrono::Utc::now().timestamp() - session_started_at
                             } else {
@@ -139,7 +139,7 @@ pub fn start_polling(
                             is_running: true,
                             is_tracking: current_session_id.is_some(),
                             current_daw: current_daw_name.clone(),
-                            current_project: current_project_name.clone(),
+                            current_track: current_track_name.clone(),
                             session_duration_secs: 0,
                             current_category: categorizer.current_phase().to_string(),
                         };
@@ -193,13 +193,13 @@ pub fn start_polling(
                     detected_plugin = classification.plugin_name;
                     detected_plugin_category = classification.plugin_category;
 
-                    // Extract project name from the main DAW window title.
+                    // Extract track name from the main DAW window title.
                     // On macOS without Screen Recording permission, titles are empty.
                     // Fall back to "Untitled" only when the title is empty (macOS case).
                     // Do NOT fall back for non-empty titles (e.g. plugin windows, mixers)
-                    // as that would overwrite the real project name.
-                    let project_name =
-                        project_extractor::extract_project_name(daw.id, &snapshot.title)
+                    // as that would overwrite the real track name.
+                    let track_name =
+                        track_extractor::extract_track_name(daw.id, &snapshot.title)
                             .or_else(|| {
                                 if snapshot.title.trim().is_empty() {
                                     Some("Untitled".to_string())
@@ -208,9 +208,9 @@ pub fn start_polling(
                                 }
                             });
 
-                    if let Some(ref proj_name) = project_name {
-                        let name_changed = match &current_project_name {
-                            Some(current) => current != proj_name,
+                    if let Some(ref trk_name) = track_name {
+                        let name_changed = match &current_track_name {
+                            Some(current) => current != trk_name,
                             None => false,
                         };
 
@@ -223,26 +223,26 @@ pub fn start_polling(
                         if current_session_id.is_none() {
                             // No active session: start a new one
                             let conn = write_conn.lock().unwrap();
-                            let project_id =
-                                projects::upsert_project(&conn, proj_name, daw.id, now)
+                            let track_id =
+                                tracks::upsert_track(&conn, trk_name, daw.id, now)
                                     .unwrap_or(0);
                             let session_id =
-                                sessions::create_session(&conn, project_id, now).unwrap_or(0);
+                                sessions::create_session(&conn, track_id, now).unwrap_or(0);
 
                             current_session_id = Some(session_id);
-                            current_project_id = Some(project_id);
+                            current_track_id = Some(track_id);
                             current_daw_id = Some(daw.id.to_string());
                             current_daw_name = Some(daw.name.to_string());
-                            current_project_name = Some(proj_name.clone());
+                            current_track_name = Some(trk_name.clone());
                             session_started_at = now;
                             categorizer.reset();
 
                             log::info!(
                                 "New session: {} in {} (session {})",
-                                proj_name, daw.name, session_id
+                                trk_name, daw.name, session_id
                             );
                         } else if daw_changed || (name_changed && !effectively_continuous) {
-                            // Different DAW, or project name changed after a gap:
+                            // Different DAW, or track name changed after a gap:
                             // end old session and start a new one
                             let conn = write_conn.lock().unwrap();
 
@@ -250,34 +250,34 @@ pub fn start_polling(
                                 let _ = sessions::end_session(&conn, sid, now);
                             }
 
-                            let project_id =
-                                projects::upsert_project(&conn, proj_name, daw.id, now)
+                            let track_id =
+                                tracks::upsert_track(&conn, trk_name, daw.id, now)
                                     .unwrap_or(0);
                             let session_id =
-                                sessions::create_session(&conn, project_id, now).unwrap_or(0);
+                                sessions::create_session(&conn, track_id, now).unwrap_or(0);
 
                             current_session_id = Some(session_id);
-                            current_project_id = Some(project_id);
+                            current_track_id = Some(track_id);
                             current_daw_id = Some(daw.id.to_string());
                             current_daw_name = Some(daw.name.to_string());
-                            current_project_name = Some(proj_name.clone());
+                            current_track_name = Some(trk_name.clone());
                             session_started_at = now;
                             categorizer.reset();
 
                             log::info!(
-                                "DAW/project switch: {} in {} (session {})",
-                                proj_name, daw.name, session_id
+                                "DAW/track switch: {} in {} (session {})",
+                                trk_name, daw.name, session_id
                             );
                         } else if name_changed && effectively_continuous {
                             // DAW was in foreground continuously (or only briefly away
                             // for a save dialog / file picker), name changed = rename / Save As
-                            // Keep the same session, just update the project name
-                            if let Some(pid) = current_project_id {
+                            // Keep the same session, just update the track name
+                            if let Some(pid) = current_track_id {
                                 let conn = write_conn.lock().unwrap();
-                                let _ = projects::rename_project(&conn, pid, proj_name, now);
+                                let _ = tracks::rename_track(&conn, pid, trk_name, now);
                             }
-                            current_project_name = Some(proj_name.clone());
-                            log::info!("Project renamed to: {}", proj_name);
+                            current_track_name = Some(trk_name.clone());
+                            log::info!("Track renamed to: {}", trk_name);
                         }
                     }
                 } else {
@@ -294,10 +294,10 @@ pub fn start_polling(
                         if let Some(sid) = current_session_id.take() {
                             let conn = write_conn.lock().unwrap();
                             let _ = sessions::end_session(&conn, sid, last_daw_seen);
-                            current_project_id = None;
+                            current_track_id = None;
                             current_daw_id = None;
                             current_daw_name = None;
-                            current_project_name = None;
+                            current_track_name = None;
                             categorizer.reset();
                             log::info!("Session ended due to idle timeout");
                         }
@@ -323,7 +323,7 @@ pub fn start_polling(
                 }
 
                 // Suppress unused variable warning
-                let _ = current_project_id;
+                let _ = current_track_id;
 
                 // Rest reminder logic
                 if current_session_id.is_some() && is_daw {
@@ -354,7 +354,7 @@ pub fn start_polling(
                     is_running: true,
                     is_tracking: current_session_id.is_some(),
                     current_daw: current_daw_name.clone(),
-                    current_project: current_project_name.clone(),
+                    current_track: current_track_name.clone(),
                     session_duration_secs: if current_session_id.is_some() {
                         now - session_started_at
                     } else {
