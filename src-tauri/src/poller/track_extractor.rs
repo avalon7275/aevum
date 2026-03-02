@@ -110,14 +110,42 @@ fn extract_pro_tools(title: &str) -> Option<String> {
 }
 
 /// Studio One: "My Song - Studio One" -> "My Song"
+/// Also handles: "My Song - Studio One Professional 7.2.2", "My Song - PreSonus Studio One", etc.
 fn extract_studio_one(title: &str) -> Option<String> {
     let lower = title.to_lowercase();
+
+    // Try exact pattern first: " - Studio One"
     if let Some(idx) = lower.rfind(" - studio one") {
         let name = &title[..idx];
         if !name.is_empty() {
             return Some(name.to_string());
         }
     }
+
+    // Studio One 7+ may use "PreSonus Studio One" in the title
+    if let Some(idx) = lower.rfind(" - presonus studio one") {
+        let name = &title[..idx];
+        if !name.is_empty() {
+            return Some(name.to_string());
+        }
+    }
+
+    // Handle "Song - Studio One Professional X.Y.Z" variants
+    if let Some(idx) = lower.rfind(" - studio one professional") {
+        let name = &title[..idx];
+        if !name.is_empty() {
+            return Some(name.to_string());
+        }
+    }
+
+    // Handle "Song - Studio One Artist X.Y.Z" variants
+    if let Some(idx) = lower.rfind(" - studio one artist") {
+        let name = &title[..idx];
+        if !name.is_empty() {
+            return Some(name.to_string());
+        }
+    }
+
     None
 }
 
@@ -196,5 +224,37 @@ mod tests {
     fn test_no_track() {
         // DAW at start screen, no track open
         assert_eq!(extract_track_name("cubase", "Cubase Pro 14"), None);
+    }
+
+    #[test]
+    fn test_studio_one_classic() {
+        assert_eq!(
+            extract_track_name("studio_one", "My Song - Studio One"),
+            Some("My Song".to_string())
+        );
+    }
+
+    #[test]
+    fn test_studio_one_professional() {
+        assert_eq!(
+            extract_track_name("studio_one", "My Song - Studio One Professional 7.2.2"),
+            Some("My Song".to_string())
+        );
+    }
+
+    #[test]
+    fn test_studio_one_artist() {
+        assert_eq!(
+            extract_track_name("studio_one", "My Song - Studio One Artist 7.2.2"),
+            Some("My Song".to_string())
+        );
+    }
+
+    #[test]
+    fn test_studio_one_presonus() {
+        assert_eq!(
+            extract_track_name("studio_one", "My Song - PreSonus Studio One 7"),
+            Some("My Song".to_string())
+        );
     }
 }

@@ -195,13 +195,18 @@ pub fn start_polling(
 
                     // Extract track name from the main DAW window title.
                     // On macOS without Screen Recording permission, titles are empty.
-                    // Fall back to "Untitled" only when the title is empty (macOS case).
-                    // Do NOT fall back for non-empty titles (e.g. plugin windows, mixers)
-                    // as that would overwrite the real track name.
+                    //
+                    // Fallback logic:
+                    // - If no session is active: always fall back to "Untitled" so that
+                    //   sessions are created even when we can't parse the title (e.g. a
+                    //   DAW changed its title format in a new version).
+                    // - If a session IS active: return None when the title is non-empty
+                    //   but unparseable (e.g. a plugin window like "Kontakt 8") to avoid
+                    //   overwriting the real track name with "Untitled".
                     let track_name =
                         track_extractor::extract_track_name(daw.id, &snapshot.title)
                             .or_else(|| {
-                                if snapshot.title.trim().is_empty() {
+                                if snapshot.title.trim().is_empty() || current_session_id.is_none() {
                                     Some("Untitled".to_string())
                                 } else {
                                     None

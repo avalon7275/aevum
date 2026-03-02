@@ -160,6 +160,10 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
 
     if version <= 2 {
         log::info!("Migrating V2 -> V3: adding billing_projects table");
+
+        // Temporarily disable foreign keys for ALTER TABLE with REFERENCES clause
+        conn.execute_batch("PRAGMA foreign_keys=OFF;")?;
+
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS billing_projects (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -186,6 +190,7 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
             )?;
         }
 
+        conn.execute_batch("PRAGMA foreign_keys=ON;")?;
         conn.execute_batch("PRAGMA user_version = 3;")?;
         log::info!("Migration V3 complete");
     }
@@ -198,14 +203,22 @@ pub fn init_db(db_path: &Path) -> Result<Connection, AppError> {
         std::fs::create_dir_all(parent)?;
     }
 
+    log::info!("Opening database at {:?}", db_path);
     let conn = Connection::open(db_path)?;
 
     conn.execute_batch("PRAGMA journal_mode=WAL;")?;
     conn.execute_batch("PRAGMA synchronous=NORMAL;")?;
     conn.execute_batch("PRAGMA foreign_keys=ON;")?;
 
-    run_migrations(&conn)?;
-    conn.execute_batch(SCHEMA)?;
+    run_migrations(&conn).map_err(|e| {
+        log::error!("Database migration failed: {}", e);
+        e
+    })?;
+    conn.execute_batch(SCHEMA).map_err(|e| {
+        log::error!("Schema creation failed: {}", e);
+        AppError::Database(e.to_string())
+    })?;
 
+    log::info!("Database initialized successfully");
     Ok(conn)
 }

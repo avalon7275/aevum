@@ -28,14 +28,23 @@ pub fn run() {
             let app_data_dir = app
                 .path()
                 .app_data_dir()
-                .expect("Failed to get app data dir");
+                .map_err(|e| {
+                    log::error!("Failed to get app data dir: {}", e);
+                    e
+                })?;
 
             // Initialize database (read connection for UI queries)
             let db_path = app_data_dir.join("mixclock.db");
-            let read_conn = init_db(&db_path).expect("Failed to initialize read database");
+            let read_conn = init_db(&db_path).map_err(|e| {
+                log::error!("Failed to initialize read database at {:?}: {}", db_path, e);
+                e
+            })?;
 
             // Write connection for the polling loop
-            let write_conn = init_db(&db_path).expect("Failed to initialize write database");
+            let write_conn = init_db(&db_path).map_err(|e| {
+                log::error!("Failed to initialize write database at {:?}: {}", db_path, e);
+                e
+            })?;
             let write_conn = Arc::new(Mutex::new(write_conn));
 
             // Load settings
@@ -63,9 +72,11 @@ pub fn run() {
                 rest_cooldown,
             );
 
-            // Setup system tray
-            tray::tray_manager::setup_tray(app.handle(), polling_control.clone())
-                .expect("Failed to setup tray");
+            // Setup system tray - don't crash if it fails
+            match tray::tray_manager::setup_tray(app.handle(), polling_control.clone()) {
+                Ok(_) => log::info!("System tray initialized"),
+                Err(e) => log::error!("Failed to setup system tray (app will continue without it): {}", e),
+            }
 
             // Manage state for Tauri commands
             app.manage(Mutex::new(read_conn));

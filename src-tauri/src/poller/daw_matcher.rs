@@ -47,7 +47,7 @@ static DAW_SIGNATURES: &[DawSignature] = &[
     DawSignature {
         name: "Studio One",
         id: "studio_one",
-        process_patterns: &["studio one", "studio pro"],
+        process_patterns: &["studio one", "studio pro", "studioone"],
         title_patterns: &["Studio One", "Studio Pro"],
     },
     DawSignature {
