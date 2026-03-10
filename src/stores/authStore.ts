@@ -114,18 +114,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { referralCode } = get();
     if (referralCode) {
       try {
-        const { data: referrer } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("referral_code", referralCode.toLowerCase())
-          .single();
+        const { data: referrerId } = await supabase
+          .rpc("lookup_referral_code", { code: referralCode });
 
-        if (referrer) {
+        if (referrerId) {
           const { data: { user: currentUser } } = await supabase.auth.getUser();
           if (currentUser) {
             await supabase
               .from("profiles")
-              .update({ referred_by: referrer.id })
+              .update({ referred_by: referrerId })
               .eq("id", currentUser.id);
           }
         }

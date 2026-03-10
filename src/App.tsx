@@ -189,23 +189,31 @@ function App() {
         {/* Update banner */}
         <UpdateBanner />
 
-        {/* View content */}
-        {view === "dashboard" && <DashboardPage onNavigate={(v) => setView(v as View)} />}
-        {view === "tracks" &&
-          (isPro ? <TracksPage /> : <UpgradePrompt feature="tracks" />)}
-        {view === "timeline" &&
-          (isPro ? <WeeklyView /> : <UpgradePrompt feature="timeline" />)}
-        {view === "reports" &&
-          (isPro ? <ReportsPage /> : <UpgradePrompt feature="reports" />)}
-        {view === "coach" &&
-          (isPro ? <CoachPage /> : <UpgradePrompt feature="coach" />)}
-        {view === "billing" &&
-          (isPro ? <BillingPage /> : <UpgradePrompt feature="billing" />)}
-        {view === "settings" && <SettingsPage />}
+        {/* View content — only render when authenticated */}
+        {!loading && user ? (
+          <>
+            {view === "dashboard" && <DashboardPage onNavigate={(v) => setView(v as View)} />}
+            {view === "tracks" &&
+              (isPro ? <TracksPage /> : <UpgradePrompt feature="tracks" />)}
+            {view === "timeline" &&
+              (isPro ? <WeeklyView /> : <UpgradePrompt feature="timeline" />)}
+            {view === "reports" &&
+              (isPro ? <ReportsPage /> : <UpgradePrompt feature="reports" />)}
+            {view === "coach" &&
+              (isPro ? <CoachPage /> : <UpgradePrompt feature="coach" />)}
+            {view === "billing" &&
+              (isPro ? <BillingPage /> : <UpgradePrompt feature="billing" />)}
+            {view === "settings" && <SettingsPage />}
+          </>
+        ) : loading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <span className="text-white/30 text-sm">Loading...</span>
+          </div>
+        ) : null}
       </div>
 
-      {/* Track detail overlay */}
-      <TrackDetailView />
+      {/* Track detail overlay — only when authenticated */}
+      {!loading && user && <TrackDetailView />}
 
       {/* Auth modal */}
       <AuthModal />
