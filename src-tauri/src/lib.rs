@@ -1,5 +1,6 @@
 mod commands;
 mod config;
+pub mod crash_reporter;
 mod db;
 mod error;
 mod plugin_db;
@@ -32,6 +33,10 @@ pub fn run() {
                     log::error!("Failed to get app data dir: {}", e);
                     e
                 })?;
+
+            // Check for crash report from previous run
+            let supabase_url = option_env!("VITE_SUPABASE_URL").unwrap_or("");
+            crash_reporter::check_and_send_crash_report(&app_data_dir, supabase_url);
 
             // Initialize database (read connection for UI queries)
             let db_path = app_data_dir.join("mixclock.db");

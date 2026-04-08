@@ -418,3 +418,8 @@ entrypoint = "./functions/stripe-portal/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/stripe-portal/*.html" ]
+
+[functions.crash-report]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/crash-report/index.ts"
